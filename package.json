@@ -1,0 +1,14 @@
+{
+  "name": "Who-Knows",
+  "version": "1.0.0",
+  "description": "24/7 Discord profile widget updater",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Ridouan AKA Rithz",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
