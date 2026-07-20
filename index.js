@@ -76,7 +76,7 @@ if (fs.existsSync(eventsPath)) {
 }
 
 // --- 4. READY EVENT ---
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log(`✅ Logged in successfully as ${client.user.tag}`);
 });
 
