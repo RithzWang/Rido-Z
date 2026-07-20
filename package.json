@@ -1,14 +1,28 @@
 {
   "name": "Rido-Z",
   "version": "1.0.0",
-  "description": "24/7 Discord profile widget updater",
+  "description": "Just a bot for my server!",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "Ridouan AKA Rithz",
+  "author": "Ridouan",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.19.2"
+    "@napi-rs/canvas": "^0.1.44",
+    "@discordjs/rest": "^2.0.1",
+    "undici": "^6.0.0",
+    "mongoose": "^8.9.0",
+    "dotenv": "^16.4.7",
+    "tesseract.js": "^5.0.0",
+    "axios": "^1.6.1",
+    "discord-api-types": "^0.37.61",
+    "discord.js": "^14.19.3",
+    "express": "^4.17.1",
+    "moment-timezone": "^0.5.43",
+    "ms": "^2.1.3",
+    "node-fetch": "^3.3.2",
+    "pretty-ms": "^7.0.1",
+    "node-cron": "^3.0.2"
   }
 }
