@@ -1,7 +1,9 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, ContainerBuilder, TextDisplayBuilder } = require('discord.js');
 
 module.exports = {
+    // ✅ guildOnly is safely outside the SlashCommandBuilder chain
     guildOnly: true,
+
     data: new SlashCommandBuilder()
         .setName('message')
         .setDescription('Manage bot messages')
@@ -65,6 +67,9 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // ✅ 1. IMMEDIATELY defer the reply. This gives the bot 15 minutes to process, preventing the timeout error!
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const subcommand = interaction.options.getSubcommand();
         
         let targetChannel = interaction.options.getChannel('channel') || interaction.channel;
@@ -79,7 +84,7 @@ module.exports = {
         // Prefer the attachment if provided, otherwise fallback to the link, otherwise null
         const image = imageAttachment ? imageAttachment.url : (imageLink || null);
 
-        // --- IMMEDIATE EXECUTION LOGIC ---
+        // --- PAYLOAD CONSTRUCTION ---
         let payload = {};
         if (content !== null) {
             const allowedMentions = shouldMention ? { parse: ['users', 'roles', 'everyone'] } : { parse: [] };
@@ -90,26 +95,27 @@ module.exports = {
         try {
             targetChannel = await interaction.guild.channels.fetch(targetChannel.id);
 
+            // ✅ 2. Replaced all interaction.reply() with interaction.editReply() because we deferred earlier.
             if (subcommand === 'send') {
                 await targetChannel.send(payload);
-                await interaction.reply({ content: `<:yes:1297814648417943565> Sent to ${targetChannel}.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Sent to ${targetChannel}.` });
             } 
             else if (subcommand === 'edit') {
                 const messageId = interaction.options.getString('message_id');
                 const messageToEdit = await targetChannel.messages.fetch(messageId);
 
                 if (messageToEdit.author.id !== interaction.client.user.id) {
-                    return interaction.reply({ content: `❌ I can only edit my own messages.`, flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: `❌ I can only edit my own messages.` });
                 }
 
                 await messageToEdit.edit(payload);
-                await interaction.reply({ content: `<:yes:1297814648417943565> Message edited.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Message edited.` });
             }
             else if (subcommand === 'reply') {
                 const messageId = interaction.options.getString('message_id');
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.reply(payload);
-                await interaction.reply({ content: `<:yes:1297814648417943565> Replied to the message.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Replied to the message.` });
             }
             else if (subcommand === 'container') {
                 const components = [
@@ -126,7 +132,7 @@ module.exports = {
                 };
 
                 await targetChannel.send(containerPayload);
-                await interaction.reply({ content: `<:yes:1297814648417943565> Container sent to ${targetChannel}.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Container sent to ${targetChannel}.` });
             }
             else if (subcommand === 'react') {
                 const messageId = interaction.options.getString('message_id');
@@ -134,12 +140,9 @@ module.exports = {
                 const superReactInput = interaction.options.getString('super_react');
                 const targetMessage = await targetChannel.messages.fetch(messageId);
 
-                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
                 let successCount = 0;
                 let responseMsg = '';
 
-                // Handle the normal reactions
                 if (normalReactInput) {
                     const emojisToReact = normalReactInput.split(/\s+/);
                     for (const rawEmoji of emojisToReact) {
@@ -157,7 +160,6 @@ module.exports = {
                     responseMsg += `<:yes:1297814648417943565> Successfully added ${successCount} normal reaction(s).\n`;
                 }
 
-                // Acknowledge the super reactions but inform the user they were skipped
                 if (superReactInput) {
                     responseMsg += `⚠️ **Note:** Skipped super reactions. Bots do not have Nitro and cannot send Super Reactions via the API.`;
                 }
@@ -168,22 +170,18 @@ module.exports = {
                 const messageId = interaction.options.getString('message_id');
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.pin();
-                await interaction.reply({ content: `<:yes:1297814648417943565> Message pinned successfully.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Message pinned successfully.` });
             }
             else if (subcommand === 'sticker') {
                 const stickerId = interaction.options.getString('sticker_id');
                 
                 await targetChannel.send({ stickers: [stickerId] });
-                await interaction.reply({ content: `<:yes:1297814648417943565> Sticker sent to ${targetChannel}.`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `<:yes:1297814648417943565> Sticker sent to ${targetChannel}.` });
             }
 
         } catch (error) {
             console.error(error);
-            if (interaction.deferred) {
-                await interaction.editReply({ content: `<:no:1297814819105144862> Error: ${error.message}` });
-            } else {
-                await interaction.reply({ content: `<:no:1297814819105144862> Error: ${error.message}`, flags: MessageFlags.Ephemeral });
-            }
+            await interaction.editReply({ content: `<:no:1297814819105144862> Error: ${error.message}` });
         }
     },
 };
