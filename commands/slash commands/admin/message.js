@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, ContainerBuilder, TextDisplayBuilder } = require('discord.js');
 
 module.exports = {
-    // ✅ guildOnly is safely outside the SlashCommandBuilder chain
     guildOnly: true,
 
     data: new SlashCommandBuilder()
@@ -67,21 +66,23 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        // ✅ 1. IMMEDIATELY defer the reply. This gives the bot 15 minutes to process, preventing the timeout error!
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+        // 1. Check User Permissions
+        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return interaction.editReply({ 
+                content: '-# <:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
+            });
+        }
+
         const subcommand = interaction.options.getSubcommand();
-        
         let targetChannel = interaction.options.getChannel('channel') || interaction.channel;
         
         const content = interaction.options.getString('content');
         const shouldMention = interaction.options.getBoolean('mention') ?? true; 
         
-        // Handle both attachment and link options
         const imageAttachment = interaction.options.getAttachment('image_attachment');
         const imageLink = interaction.options.getString('image_link');
-        
-        // Prefer the attachment if provided, otherwise fallback to the link, otherwise null
         const image = imageAttachment ? imageAttachment.url : (imageLink || null);
 
         // --- PAYLOAD CONSTRUCTION ---
@@ -95,27 +96,34 @@ module.exports = {
         try {
             targetChannel = await interaction.guild.channels.fetch(targetChannel.id);
 
-            // ✅ 2. Replaced all interaction.reply() with interaction.editReply() because we deferred earlier.
             if (subcommand === 'send') {
                 await targetChannel.send(payload);
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Sent to ${targetChannel}.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` 
+                });
             } 
             else if (subcommand === 'edit') {
                 const messageId = interaction.options.getString('message_id');
                 const messageToEdit = await targetChannel.messages.fetch(messageId);
 
                 if (messageToEdit.author.id !== interaction.client.user.id) {
-                    return interaction.editReply({ content: `❌ I can only edit my own messages.` });
+                    return interaction.editReply({ 
+                        content: `-# <:no:1528709599740559415> I CAN ONLY EDIT MY OWN MESSAGES` 
+                    });
                 }
 
                 await messageToEdit.edit(payload);
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Message edited.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> MESSAGE HAS BEEN **EDITED**` 
+                });
             }
             else if (subcommand === 'reply') {
                 const messageId = interaction.options.getString('message_id');
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.reply(payload);
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Replied to the message.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> REPLIED TO THE MESSAGE` 
+                });
             }
             else if (subcommand === 'container') {
                 const components = [
@@ -132,7 +140,9 @@ module.exports = {
                 };
 
                 await targetChannel.send(containerPayload);
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Container sent to ${targetChannel}.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> CONTAINER SENT TO ${targetChannel}` 
+                });
             }
             else if (subcommand === 'react') {
                 const messageId = interaction.options.getString('message_id');
@@ -157,11 +167,11 @@ module.exports = {
                             console.error(`Failed to react with ${resolvedEmoji}`);
                         }
                     }
-                    responseMsg += `<:yes:1297814648417943565> Successfully added ${successCount} normal reaction(s).\n`;
+                    responseMsg += `-# <:yes:1528709597647470615> ADDED **${successCount}** NORMAL REACTION(S)\n`;
                 }
 
                 if (superReactInput) {
-                    responseMsg += `⚠️ **Note:** Skipped super reactions. Bots do not have Nitro and cannot send Super Reactions via the API.`;
+                    responseMsg += `-# <:warn:1528710101324529775> SKIPPED SUPER REACTIONS (**BOTS CANNOT USE THEM**)`;
                 }
 
                 await interaction.editReply({ content: responseMsg.trim() });
@@ -170,18 +180,24 @@ module.exports = {
                 const messageId = interaction.options.getString('message_id');
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.pin();
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Message pinned successfully.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> MESSAGE **PINNED** SUCCESSFULLY` 
+                });
             }
             else if (subcommand === 'sticker') {
                 const stickerId = interaction.options.getString('sticker_id');
                 
                 await targetChannel.send({ stickers: [stickerId] });
-                await interaction.editReply({ content: `<:yes:1297814648417943565> Sticker sent to ${targetChannel}.` });
+                await interaction.editReply({ 
+                    content: `-# <:yes:1528709597647470615> STICKER SENT TO ${targetChannel}` 
+                });
             }
 
         } catch (error) {
             console.error(error);
-            await interaction.editReply({ content: `<:no:1297814819105144862> Error: ${error.message}` });
+            await interaction.editReply({ 
+                content: `-# <:no:1528709599740559415> ERROR: \`${error.message}\`` 
+            });
         }
     },
 };
