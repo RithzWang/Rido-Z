@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
-    guildOnly: true,
+    // guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('pause-invites')
         .setDescription('Manage the server invite pause state')
