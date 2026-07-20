@@ -4,7 +4,7 @@ module.exports = {
     // guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('pause-invites')
-        .setDescription('Manage the server invite pause state')
+        .setDescription('Manage the pause server invites')
         // Keeps it hidden in the menu from non-admins, but we will still manually check below
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild) 
         
