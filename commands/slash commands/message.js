@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, MessageFlags, ContainerBuilder, TextDisplayBuilder } = require('discord.js');
 
 module.exports = {
+    guildOnly: true;
     data: new SlashCommandBuilder()
         .setName('message')
         .setDescription('Manage bot messages')
