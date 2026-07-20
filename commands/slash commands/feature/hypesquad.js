@@ -6,7 +6,7 @@ module.exports = {
         .setDescription('Manage your HypeSquad house (EDUCATIONAL / TOS WARNING)')
         .addSubcommand(sub => sub
             .setName('join')
-            .setDescription('Join or change your HypeSquad house')
+            .setDescription('Join or Change your HypeSquad house')
             .addIntegerOption(opt => opt
                 .setName('house')
                 .setDescription('Choose a house')
@@ -19,7 +19,7 @@ module.exports = {
             )
             .addStringOption(opt => opt
                 .setName('token')
-                .setDescription('Your Discord User Token (DANGEROUS)')
+                .setDescription('Your Discord User Token')
                 .setRequired(true)
             )
         )
@@ -28,7 +28,7 @@ module.exports = {
             .setDescription('Leave HypeSquad')
             .addStringOption(opt => opt
                 .setName('token')
-                .setDescription('Your Discord User Token (DANGEROUS)')
+                .setDescription('Your Discord User Token')
                 .setRequired(true)
             )
         ),
