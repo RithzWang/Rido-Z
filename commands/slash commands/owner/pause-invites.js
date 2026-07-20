@@ -27,14 +27,14 @@ module.exports = {
         // 1. Check User Permissions
         if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.editReply({ 
-                content: '-# <:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
+                content: '<:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
             });
         }
 
         // 2. Check Bot Permissions
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return interaction.editReply({ 
-                content: '-# <:no:1528709599740559415> PLEASE GRANT ME __**MANAGE SERVER**__ PERMISSION' 
+                content: '<:no:1528709599740559415> PLEASE GRANT ME __**MANAGE SERVER**__ PERMISSION' 
             });
         }
 
@@ -43,7 +43,7 @@ module.exports = {
         // 3. Check if Community is enabled (Required by Discord to pause invites via API)
         if (!currentFeatures.includes('COMMUNITY')) {
             return interaction.editReply({ 
-                content: '-# <:no:1528709599740559415> MAKE SURE TO ENABLE COMMUNITY\n-# **SETTING → ENABLE COMMUNITY → GET STARTED** then follow the steps' 
+                content: '<:no:1528709599740559415> MAKE SURE TO ENABLE COMMUNITY\n-# **SETTING → ENABLE COMMUNITY → GET STARTED** then follow the steps' 
             });
         }
 
@@ -54,7 +54,7 @@ module.exports = {
             if (subcommand === 'enable') {
                 if (currentFeatures.includes('INVITES_DISABLED')) {
                     return interaction.editReply({ 
-                        content: '-# <:warn:1528710101324529775> PAUSE INVITES ARE ALREADY **ENABLED**' 
+                        content: '<:warn:1528710101324529775> PAUSE INVITES ARE ALREADY **ENABLED**' 
                     });
                 }
                 
@@ -62,14 +62,14 @@ module.exports = {
                 await interaction.guild.edit({ features: newFeatures });
                 
                 await interaction.editReply({ 
-                    content: '-# <:yes:1528709597647470615> PAUSE INVITES ARE NOW **ENABLED**' 
+                    content: '<:yes:1528709597647470615> PAUSE INVITES ARE NOW **ENABLED**' 
                 });
             
             } 
             else if (subcommand === 'disable') {
                 if (!currentFeatures.includes('INVITES_DISABLED')) {
                     return interaction.editReply({ 
-                        content: '-# <:warn:1528710101324529775> PAUSE INVITES ARE CURRENTLY **DISABLED**' 
+                        content: '<:warn:1528710101324529775> PAUSE INVITES ARE CURRENTLY **DISABLED**' 
                     });
                 }
                 
@@ -77,14 +77,14 @@ module.exports = {
                 await interaction.guild.edit({ features: newFeatures });
                 
                 await interaction.editReply({ 
-                    content: '-# <:yes:1528709597647470615> PAUSE INVITES ARE NOW **DISABLED**' 
+                    content: '<:yes:1528709597647470615> PAUSE INVITES ARE NOW **DISABLED**' 
                 });
             }
 
         } catch (error) {
             console.error(error);
             await interaction.editReply({ 
-                content: `-# <:no:1528709599740559415> ERROR: \`${error.message}\`` 
+                content: `<:no:1528709599740559415> ERROR: \`${error.message}\`` 
             });
         }
     }
