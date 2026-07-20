@@ -40,7 +40,7 @@ client.slashCommands = new Collection();
 
 // --- 1. LOAD SLASH COMMAND HANDLER ---
 // Assumes this handles your slash command registry
-require('./handlers/commandHandler')(client);
+require('./commandHandler')(client);
 
 // --- 2. LOAD LEGACY MESSAGE COMMANDS ---
 const normalCommandsPath = path.join(__dirname, 'commands/normal commands');
