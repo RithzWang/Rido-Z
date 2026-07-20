@@ -84,36 +84,53 @@ client.once('clientReady', async () => {
     console.log(`✅ Logged in successfully as ${client.user.tag}`);
 
     // ==========================================
-    // AUTO-DEPLOY SLASH COMMANDS
+    // AUTO-DEPLOY SLASH COMMANDS (FIXED FOR GLOBAL & GUILD)
     // ==========================================
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-    const slashCommandsData = [];
     
-    // Extract JSON data from loaded slash commands
+    const guildCommandsData = [];
+    const globalCommandsData = [];
+    
+    // Sort commands into their proper deployment targets
     client.slashCommands.forEach(command => {
         if (command.data) {
-            slashCommandsData.push(command.data.toJSON());
+            if (command.guildOnly) {
+                guildCommandsData.push(command.data.toJSON());
+            } else {
+                globalCommandsData.push(command.data.toJSON());
+            }
         }
     });
 
     try {
-        console.log(`Started refreshing ${slashCommandsData.length} application (/) commands.`);
-        
-        // If you have a specific server ID in your config, deploy as Guild-only commands
-        if (config.guildId) {
-            await rest.put(
-                Routes.applicationGuildCommands(client.user.id, config.guildId),
-                { body: slashCommandsData }
-            );
-            console.log(`✅ Guild-only commands registered to server: ${config.guildId}`);
-        } else {
-            // Otherwise, deploy globally
+        // 1. Deploy Global Commands (No guildOnly rule set)
+        if (globalCommandsData.length > 0) {
+            console.log(`🔄 Refreshing ${globalCommandsData.length} Global (/) commands...`);
             await rest.put(
                 Routes.applicationCommands(client.user.id),
-                { body: slashCommandsData }
+                { body: globalCommandsData }
             );
             console.log(`✅ Global commands registered.`);
         }
+
+        // 2. Deploy Guild Commands (Has guildOnly: true)
+        if (config.guildId) {
+            if (guildCommandsData.length > 0) {
+                console.log(`🔄 Refreshing ${guildCommandsData.length} Guild-only (/) commands...`);
+                await rest.put(
+                    Routes.applicationGuildCommands(client.user.id, config.guildId),
+                    { body: guildCommandsData }
+                );
+                console.log(`✅ Guild-only commands registered to server: ${config.guildId}`);
+            } else {
+                // If there are no guild commands, push an empty array to clear the guild's cache
+                await rest.put(
+                    Routes.applicationGuildCommands(client.user.id, config.guildId),
+                    { body: [] }
+                );
+            }
+        }
+        
     } catch (error) {
         console.error("❌ Command Register Error:", error);
     }
