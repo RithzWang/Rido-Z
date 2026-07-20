@@ -10,13 +10,13 @@ module.exports = {
         // --- ENABLE SUBCOMMAND ---
         .addSubcommand(sub => sub
             .setName('enable')
-            .setDescription('Permanently pause all server invites')
+            .setDescription('Permanently pause invites')
         )
         
         // --- DISABLE SUBCOMMAND ---
         .addSubcommand(sub => sub
             .setName('disable')
-            .setDescription('Unpause server invites (restores previous links)')
+            .setDescription('Unpause invites')
         ),
 
     async execute(interaction) {
@@ -36,7 +36,7 @@ module.exports = {
                 newFeatures.push('INVITES_DISABLED');
                 await interaction.guild.edit({ features: newFeatures });
                 
-                await interaction.editReply({ content: '⛔ Server invites are now **paused**. No one can join until disabled.' });
+                await interaction.editReply({ content: '⛔ Server invites are now **paused**.' });
             
             } 
             else if (subcommand === 'disable') {
@@ -48,7 +48,7 @@ module.exports = {
                 newFeatures = newFeatures.filter(feature => feature !== 'INVITES_DISABLED');
                 await interaction.guild.edit({ features: newFeatures });
                 
-                await interaction.editReply({ content: '✅ Server invites are now **unpaused**. Old links will work again.' });
+                await interaction.editReply({ content: '✅ Server invites are now **unpaused**.' });
             }
 
         } catch (error) {
