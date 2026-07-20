@@ -44,7 +44,7 @@ client.slashCommands = new Collection();
 
 // --- 1. LOAD SLASH COMMAND HANDLER ---
 // Make sure your commandHandler file correctly sets client.slashCommands
-require('./commandHandler')(client);
+require('./commandHandler.js')(client);
 
 // --- 2. LOAD LEGACY MESSAGE COMMANDS ---
 const normalCommandsPath = path.join(__dirname, 'commands/normal commands');
