@@ -13,7 +13,7 @@ const mongoose = require('mongoose');
 require('./keep_alive.js');
 
 // --- CONFIGURATION ---
-const config = require("./config.json");
+const { guildId, clientId } = require("./config.json");
 
 const client = new Client({
     intents: [
