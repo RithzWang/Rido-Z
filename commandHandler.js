@@ -53,10 +53,10 @@ module.exports = (client) => {
     // ====================================================
     
     // A. Load Slash Commands
-    const slashFolder = path.join(__dirname, '..', 'commands', 'slash commands');
+    const slashFolder = path.join(__dirname, 'commands', 'slash commands');
     loadCommands(slashFolder);
 
     // B. Load Context Menu Commands
-    const contextFolder = path.join(__dirname, '..', 'commands', 'context');
+    const contextFolder = path.join(__dirname, 'commands', 'context commands');
     loadCommands(contextFolder);
 };
