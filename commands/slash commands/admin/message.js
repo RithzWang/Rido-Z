@@ -70,7 +70,7 @@ module.exports = {
         // 1. Check User Permissions
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.editReply({ 
-                content: '-# <:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
+                content: '<:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
             });
         }
 
@@ -98,7 +98,7 @@ module.exports = {
             if (subcommand === 'send') {
                 await targetChannel.send(payload);
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` 
+                    content: `<:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` 
                 });
             } 
             else if (subcommand === 'edit') {
@@ -107,13 +107,13 @@ module.exports = {
 
                 if (messageToEdit.author.id !== interaction.client.user.id) {
                     return interaction.editReply({ 
-                        content: `-# <:no:1528709599740559415> I CAN ONLY EDIT MY OWN MESSAGES` 
+                        content: `<:no:1528709599740559415> I CAN ONLY EDIT MY OWN MESSAGES` 
                     });
                 }
 
                 await messageToEdit.edit(payload);
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> MESSAGE HAS BEEN **EDITED**` 
+                    content: `<:yes:1528709597647470615> MESSAGE HAS BEEN **EDITED**` 
                 });
             }
             else if (subcommand === 'reply') {
@@ -121,7 +121,7 @@ module.exports = {
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.reply(payload);
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> REPLIED TO THE MESSAGE` 
+                    content: `<:yes:1528709597647470615> REPLIED TO THE MESSAGE` 
                 });
             }
             else if (subcommand === 'container') {
@@ -140,7 +140,7 @@ module.exports = {
 
                 await targetChannel.send(containerPayload);
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> CONTAINER SENT TO ${targetChannel}` 
+                    content: `<:yes:1528709597647470615> CONTAINER SENT TO ${targetChannel}` 
                 });
             }
             else if (subcommand === 'react') {
@@ -165,7 +165,7 @@ module.exports = {
                 }
                 
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> ADDED **${successCount}** REACTION(S)` 
+                    content: `<:yes:1528709597647470615> ADDED **${successCount}** REACTION(S)` 
                 });
             }
             else if (subcommand === 'pin') {
@@ -173,7 +173,7 @@ module.exports = {
                 const targetMessage = await targetChannel.messages.fetch(messageId);
                 await targetMessage.pin();
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> MESSAGE **PINNED** SUCCESSFULLY` 
+                    content: `<:yes:1528709597647470615> MESSAGE **PINNED** SUCCESSFULLY` 
                 });
             }
             else if (subcommand === 'sticker') {
@@ -181,14 +181,14 @@ module.exports = {
                 
                 await targetChannel.send({ stickers: [stickerId] });
                 await interaction.editReply({ 
-                    content: `-# <:yes:1528709597647470615> STICKER SENT TO ${targetChannel}` 
+                    content: `<:yes:1528709597647470615> STICKER SENT TO ${targetChannel}` 
                 });
             }
 
         } catch (error) {
             console.error(error);
             await interaction.editReply({ 
-                content: `-# <:no:1528709599740559415> ERROR: \`${error.message}\`` 
+                content: `<:no:1528709599740559415> ERROR: \`${error.message}\`` 
             });
         }
     },
