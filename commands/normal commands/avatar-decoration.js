@@ -69,8 +69,8 @@ module.exports = {
                     .setStyle(ButtonStyle.Secondary);
 
                 if (isShowingGlobal) {
-                    toggleButton.setLabel('Show Per-server A-Decoration');
-                    if (!hasServerDeco) toggleButton.setDisabled(true).setLabel('No Per-server A-Decoration');
+                    toggleButton.setLabel('Show Per-server Avatar Decoration');
+                    if (!hasServerDeco) toggleButton.setDisabled(true).setLabel('No Per-server Avatar Decoration');
                 } else {
                     toggleButton.setLabel('Show Global Decoration');
                     if (!globalDeco) toggleButton.setDisabled(true).setLabel('No Global A-Decoration');
