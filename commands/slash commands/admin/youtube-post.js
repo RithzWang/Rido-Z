@@ -106,7 +106,7 @@ module.exports = {
             // 1. Check if it's already added in MongoDB
             const exists = await YouTubeDB.findOne({ ytChannelId: ytId, discordChannelId: targetChannel.id });
             if (exists) {
-                return interaction.editReply(`❌ This YouTube channel is already being tracked in <#${targetChannel.id}>.`);
+                return interaction.editReply(`<:warn:1528710101324529775> THIS YOUTUBE CHANNEL IS ALREADY BEING TRACKED IN <#${targetChannel.id}>.`);
             }
 
             // 2. Check Bot Permissions in the target channel
@@ -120,7 +120,7 @@ module.exports = {
 
             const missingPerms = requiredPerms.filter(perm => !botPermissions.has(perm));
             if (missingPerms.length > 0) {
-                return interaction.editReply(`❌ I am missing required permissions in <#${targetChannel.id}>.\nPlease ensure I have: **View Channel, Send Messages, Embed Links, and Attach Files**.`);
+                return interaction.editReply(`<:no:1528709599740559415> I AM MISSING REQUIRED PERMISSIONS IN <#${targetChannel.id}>.\nPLEASE ENSURE I HAVE: **__View Channel__, __Send Messages__ and __Embed Links__**`);
             }
 
             // 3. Validate YouTube Channel via RSS
@@ -134,7 +134,7 @@ module.exports = {
                 ytLink = feed.link;
                 if (feed.items.length > 0) lastVidId = feed.items[0].id; 
             } catch (error) {
-                return interaction.editReply(`❌ Invalid YouTube Channel ID or the channel has no public videos.\nEnsure you are using the ID starting with \`UC...\``);
+                return interaction.editReply(`<:no:1528709599740559415> INVALID YOUTUBE CHANNEL ID OR THE CHANNEL HAS NO PUBLIC VIDEOS.\nENSURE YOU ARE USING THE ID STARTING WITH \`UC...\``);
             }
 
             // 4. Save to MongoDB
@@ -146,7 +146,7 @@ module.exports = {
                 lastVideoId: lastVidId
             });
 
-            return interaction.editReply(`✅ Successfully added **[${ytName}](${ytLink})**.\nNew videos will be announced in <#${targetChannel.id}>!`);
+            return interaction.editReply(`<:yes:1528709597647470615> SUCCESSFULLY ADDED**[${ytName}](${ytLink})**.\nNEW VIDEOS WILL BE ANNOUNCED IN <#${targetChannel.id}>!`);
         }
 
         // ------------------------------------------
@@ -159,11 +159,11 @@ module.exports = {
             const removedEntry = await YouTubeDB.findOneAndDelete({ ytChannelId: ytIdToRemove });
 
             if (!removedEntry) {
-                return interaction.reply({ content: `❌ Could not find that channel in the database.`, flags: [MessageFlags.Ephemeral] });
+                return interaction.reply({ content: `<:no:1528709599740559415> I COULD NOT FIND THAT CHANNEL IN THE DATABASE`, flags: [MessageFlags.Ephemeral] });
             }
 
             return interaction.reply({ 
-                content: `🗑️ Successfully stopped tracking **${removedEntry.ytChannelName}**.`, 
+                content: `<:yes:1528709597647470615> SUCCESSFULLY STOP TRACKING **${removedEntry.ytChannelName}**.`, 
                 flags: [MessageFlags.Ephemeral] 
             });
         }
@@ -175,7 +175,7 @@ module.exports = {
             const dbChannels = await YouTubeDB.find({});
 
             if (dbChannels.length === 0) {
-                return interaction.reply({ content: `There are currently no YouTube channels being tracked.`, flags: [MessageFlags.Ephemeral] });
+                return interaction.reply({ content: `THERE ARE CURRENTLY NO YOUTUBE CHANNELS BEING TRACKED`, flags: [MessageFlags.Ephemeral] });
             }
 
             let currentPage = 0;
