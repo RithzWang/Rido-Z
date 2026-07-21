@@ -40,7 +40,7 @@ module.exports = {
 
             if (!globalBanner && !displayBanner) {
                 return message.reply({ 
-                    content: `<:No:1297814819105144862> <@${targetUser.id}> has no banner set.`, 
+                    content: `<:no:1528709599740559415> <@${targetUser.id}> HAS NO BANNER SET`, 
                     flags: [MessageFlags.Ephemeral, MessageFlags.SuppressNotifications],
                     allowedMentions: { parse: [], repliedUser: false }
                 });
@@ -66,7 +66,7 @@ module.exports = {
                 if (disableToggle) toggleButton.setDisabled(true);
 
                 const container = new ContainerBuilder()
-                    .setAccentColor(0x888888)
+                   // .setAccentColor(0x888888)
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`))
                     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false));
 
