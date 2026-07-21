@@ -15,7 +15,7 @@ const {
 module.exports = {
     name: 'avatar',
     aliases: ['av'],
-    description: 'Shows user avatar',
+    description: 'Shows avatar',
    // channels: ['1456197056510165026', '1456197056510165029', '1456197056988319870'], 
 
     async execute(message, args) {
