@@ -5,10 +5,6 @@ const {
     ChannelType,
     ContainerBuilder, 
     TextDisplayBuilder, 
-    SectionBuilder, 
-    ThumbnailBuilder, 
-    SeparatorBuilder, 
-    SeparatorSpacingSize, 
     ButtonBuilder, 
     ButtonStyle, 
     ActionRowBuilder,
@@ -27,7 +23,7 @@ const youtubeSchema = new Schema({
     ytChannelLink: { type: String, required: true },
     discordChannelId: { type: String, required: true },
     profileUrl: { type: String, default: "https://cdn-icons-png.flaticon.com/512/1384/1384060.png" },
-    lastVideoId: { type: String, default: null } // Useful for your background checker
+    lastVideoId: { type: String, default: null } 
 });
 
 // Prevent model overwrite error upon hot-reloading
@@ -35,7 +31,7 @@ const YouTubeDB = models.YouTubeChannel || model('YouTubeChannel', youtubeSchema
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('youtube-post')
+        .setName('youtube')
         .setDescription('Manage automated YouTube video announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
@@ -136,7 +132,7 @@ module.exports = {
                 const feed = await parser.parseURL(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`);
                 ytName = feed.title;
                 ytLink = feed.link;
-                if (feed.items.length > 0) lastVidId = feed.items[0].id; // Save newest video so it doesn't instantly ping on startup
+                if (feed.items.length > 0) lastVidId = feed.items[0].id; 
             } catch (error) {
                 return interaction.editReply(`❌ Invalid YouTube Channel ID or the channel has no public videos.\nEnsure you are using the ID starting with \`UC...\``);
             }
@@ -192,60 +188,43 @@ module.exports = {
 
                 const container = new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## <:youtube:123456789> Youtube Poster") 
+                        new TextDisplayBuilder().setContent("## Youtube Poster") 
                     );
 
-                // Add sections for each item on this page
-                currentItems.forEach((item, index) => {
-                    const itemNumber = start + index + 1;
-                    container.addSectionComponents(
-                        new SectionBuilder()
-                            .setThumbnailAccessory(
-                                new ThumbnailBuilder().setURL(item.profileUrl)
-                            )
-                            .addTextDisplayComponents(
-                                new TextDisplayBuilder().setContent(
-                                    `${itemNumber}. **[${item.ytChannelName}](${item.ytChannelLink})** \`${item.ytChannelId}\`\n- new videos posted in <#${item.discordChannelId}>`
-                                )
-                            )
+                // Add text displays for each item on this page using the new format
+                currentItems.forEach((item) => {
+                    container.addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(
+                            `### **[${item.ytChannelName}](${item.ytChannelLink})**\n-# \`${item.ytChannelId}\`\n-# 📢 <#${item.discordChannelId}>`
+                        )
                     );
                 });
 
-                container.addSeparatorComponents(
-                    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
-                );
-
-                // Action Row for Pagination
+                // Action Row for Pagination (always attached)
                 const actionRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId("yt_first")
-                        .setStyle(ButtonStyle.Secondary)
+                        .setStyle(ButtonStyle.Primary)
                         .setLabel("First")
-                        .setEmoji({ name: "⏪" })
                         .setDisabled(pageIndex === 0),
                     new ButtonBuilder()
                         .setCustomId("yt_prev")
                         .setStyle(ButtonStyle.Secondary)
                         .setLabel("Previous")
-                        .setEmoji({ name: "◀️" })
                         .setDisabled(pageIndex === 0),
                     new ButtonBuilder()
                         .setCustomId("yt_next")
                         .setStyle(ButtonStyle.Secondary)
                         .setLabel("Next")
-                        .setEmoji({ name: "▶️" })
                         .setDisabled(pageIndex === maxPages - 1),
                     new ButtonBuilder()
                         .setCustomId("yt_last")
-                        .setStyle(ButtonStyle.Secondary)
+                        .setStyle(ButtonStyle.Primary)
                         .setLabel("Last")
-                        .setEmoji({ name: "⏩" })
                         .setDisabled(pageIndex === maxPages - 1)
                 );
 
-                if (maxPages > 1) {
-                    container.addActionRowComponents(actionRow);
-                }
+                container.addActionRowComponents(actionRow);
 
                 return container;
             };
@@ -255,6 +234,7 @@ module.exports = {
                 flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral] 
             });
 
+            // If there's only 1 page, the buttons are already disabled, so we can stop here
             if (maxPages === 1) return; 
 
             const collector = response.createMessageComponentCollector({ 
@@ -275,8 +255,10 @@ module.exports = {
             });
 
             collector.on('end', () => {
+                // When time expires, disable whatever buttons are currently showing
                 const disabledPage = generatePage(currentPage);
-                disabledPage.components.pop(); 
+                // Ensure everything on the final action row is disabled
+                disabledPage.components[disabledPage.components.length - 1].components.forEach(btn => btn.setDisabled(true));
                 interaction.editReply({ components: [disabledPage] }).catch(() => {});
             });
         }
