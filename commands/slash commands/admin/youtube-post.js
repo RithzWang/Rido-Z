@@ -10,28 +10,15 @@ const {
     ActionRowBuilder,
     ComponentType
 } = require('discord.js');
-const { Schema, model, models } = require('mongoose');
 const Parser = require('rss-parser');
 const parser = new Parser();
 
-// ==========================================
-// MONGODB SCHEMA
-// ==========================================
-const youtubeSchema = new Schema({
-    ytChannelId: { type: String, required: true },
-    ytChannelName: { type: String, required: true },
-    ytChannelLink: { type: String, required: true },
-    discordChannelId: { type: String, required: true },
-    profileUrl: { type: String, default: "https://cdn-icons-png.flaticon.com/512/1384/1384060.png" },
-    lastVideoId: { type: String, default: null } 
-});
-
-// Prevent model overwrite error upon hot-reloading
-const YouTubeDB = models.YouTubeChannel || model('YouTubeChannel', youtubeSchema);
+// 👇 Import your MongoDB model from the Schema folder
+const YouTubeDB = require('../../../schema/youtubeSchema'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('youtube')
+        .setName('youtube-post')
         .setDescription('Manage automated YouTube video announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
@@ -172,10 +159,12 @@ module.exports = {
         // LIST SUBCOMMAND
         // ------------------------------------------
         if (subcommand === 'list') {
+            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] }); // Deferred for safety
+            
             const dbChannels = await YouTubeDB.find({});
 
             if (dbChannels.length === 0) {
-                return interaction.reply({ content: `THERE ARE CURRENTLY NO YOUTUBE CHANNELS BEING TRACKED`, flags: [MessageFlags.Ephemeral] });
+                return interaction.editReply({ content: `THERE ARE CURRENTLY NO YOUTUBE CHANNELS BEING TRACKED` });
             }
 
             let currentPage = 0;
@@ -229,9 +218,9 @@ module.exports = {
                 return container;
             };
 
-            const response = await interaction.reply({ 
+            const response = await interaction.editReply({ 
                 components: [generatePage(currentPage)], 
-                flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral] 
+                flags: [MessageFlags.IsComponentsV2] 
             });
 
             // If there's only 1 page, the buttons are already disabled, so we can stop here
@@ -250,7 +239,7 @@ module.exports = {
 
                 await i.update({ 
                     components: [generatePage(currentPage)],
-                    flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral]
+                    flags: [MessageFlags.IsComponentsV2]
                 });
             });
 
