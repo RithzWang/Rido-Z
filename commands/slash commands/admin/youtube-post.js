@@ -14,7 +14,7 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 
 // 👇 Import your MongoDB model from the Schema folder
-const YouTubeDB = require('../Schema/youtubeSchema'); 
+const YouTubeDB = require('../../../schema/youtubeSchema'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
