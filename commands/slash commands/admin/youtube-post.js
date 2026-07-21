@@ -195,7 +195,7 @@ module.exports = {
                 currentItems.forEach((item) => {
                     container.addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(
-                            `## **[${item.ytChannelName}](${item.ytChannelLink})**\n-# - \`${item.ytChannelId}\`\n-# - <#${item.discordChannelId}>`
+                            `## **[${item.ytChannelName}](${item.ytChannelLink})**\n-# Channel ID: \`${item.ytChannelId}\`\n-# Post In: <#${item.discordChannelId}>`
                         )
                     );
                 });
