@@ -13,6 +13,11 @@ const {
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
+// 👇 Import RSS Parser and your YouTube Schema for the background checker
+const Parser = require('rss-parser');
+const parser = new Parser();
+const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
+
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
 
@@ -158,6 +163,45 @@ client.once('clientReady', async () => {
             status: 'dnd'
         });
     }, 15000); // Updates every 15 seconds to avoid Discord rate limits
+
+    // ==========================================
+    // YOUTUBE BACKGROUND CHECKER
+    // ==========================================
+    setInterval(async () => {
+        try {
+            // 1. Get all tracked channels from MongoDB
+            const trackedChannels = await YouTubeDB.find({});
+
+            // 2. Loop through each channel and check their RSS feed
+            for (const dbChannel of trackedChannels) {
+                try {
+                    const feed = await parser.parseURL(`https://www.youtube.com/feeds/videos.xml?channel_id=${dbChannel.ytChannelId}`);
+                    
+                    if (feed.items.length > 0) {
+                        const latestVideo = feed.items[0]; // The first item is always the newest
+
+                        // 3. Compare the newest video ID with the one saved in the database
+                        if (latestVideo.id !== dbChannel.lastVideoId) {
+                            
+                            // 4. We found a new video! Let's send the message
+                            const discordChannel = client.channels.cache.get(dbChannel.discordChannelId);
+                            if (discordChannel) {
+                                await discordChannel.send(`**${latestVideo.author}** just posted a video!\n${latestVideo.link}`);
+                            }
+
+                            // 5. Update the database so we don't announce this video again
+                            dbChannel.lastVideoId = latestVideo.id;
+                            await dbChannel.save();
+                        }
+                    }
+                } catch (feedError) {
+                    console.error(`[YouTube] Failed to fetch feed for ${dbChannel.ytChannelName}:`, feedError.message);
+                }
+            }
+        } catch (dbError) {
+            console.error(`[YouTube] Database error during interval:`, dbError);
+        }
+    }, 1 * 60 * 1000); // Check every 1 minute
 });
 
 // --- 5. MESSAGE COMMAND LISTENER ---
