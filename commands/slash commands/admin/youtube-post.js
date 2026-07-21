@@ -146,7 +146,7 @@ module.exports = {
                 lastVideoId: lastVidId
             });
 
-            return interaction.editReply(`<:yes:1528709597647470615> SUCCESSFULLY ADDED**[${ytName}](${ytLink})**.\nNEW VIDEOS WILL BE ANNOUNCED IN <#${targetChannel.id}>!`);
+            return interaction.editReply(`<:yes:1528709597647470615> SUCCESSFULLY ADDED **[${ytName}](${ytLink})**.\nNEW VIDEOS WILL BE ANNOUNCED IN <#${targetChannel.id}>!`);
         }
 
         // ------------------------------------------
