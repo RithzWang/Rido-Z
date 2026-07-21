@@ -57,6 +57,6 @@ module.exports = (client) => {
     loadCommands(slashFolder);
 
     // B. Load Context Menu Commands
-    const contextFolder = path.join(__dirname, '..', 'commands', 'context commands');
+    const contextFolder = path.join(__dirname, '..', 'commands', 'context');
     loadCommands(contextFolder);
 };
