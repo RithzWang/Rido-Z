@@ -62,18 +62,18 @@ module.exports = {
             const createDecoContainer = (isShowingGlobal, disableToggle = false) => {
                 const currentImage = isShowingGlobal ? globalDeco : displayDeco;
                 const titleText = isShowingGlobal ? `## Avatar Decoration` : `## Per-server Avatar Decoration`;
-                const bodyText = isShowingGlobal ? `Decoration for <@${targetUser.id}>` : `Per-server Decoration for <@${targetUser.id}>`;
+                const bodyText = isShowingGlobal ? `Avatar Decoration for <@${targetUser.id}>` : `Per-server Avatar Decoration for <@${targetUser.id}>`;
 
                 const toggleButton = new ButtonBuilder()
                     .setCustomId('toggle_deco_msg')
                     .setStyle(ButtonStyle.Secondary);
 
                 if (isShowingGlobal) {
-                    toggleButton.setLabel('Show Per-server Decoration');
-                    if (!hasServerDeco) toggleButton.setDisabled(true).setLabel('No Per-server Decoration');
+                    toggleButton.setLabel('Show Per-server A-Decoration');
+                    if (!hasServerDeco) toggleButton.setDisabled(true).setLabel('No Per-server A-Decoration');
                 } else {
                     toggleButton.setLabel('Show Global Decoration');
-                    if (!globalDeco) toggleButton.setDisabled(true).setLabel('No Global Decoration');
+                    if (!globalDeco) toggleButton.setDisabled(true).setLabel('No Global A-Decoration');
                 }
                 if (disableToggle) toggleButton.setDisabled(true);
 
