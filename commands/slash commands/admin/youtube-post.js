@@ -14,7 +14,7 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 
 // 👇 Import your MongoDB model from the Schema folder
-const YouTubeDB = require('../../../schema/youtubeSchema'); 
+const YouTubeDB = require('../Schema/youtubeSchema'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -40,8 +40,8 @@ module.exports = {
                 .setName('remove')
                 .setDescription('Remove a tracked YouTube channel')
                 .addStringOption(option => 
-                    option.setName('yt_channel')
-                        .setDescription('The YouTube channel to remove')
+                    option.setName('yt_channel_id') // 👈 Changed to yt_channel_id
+                        .setDescription('The YouTube Channel ID to remove')
                         .setRequired(true)
                         .setAutocomplete(true))
         )
@@ -140,7 +140,8 @@ module.exports = {
         // REMOVE SUBCOMMAND
         // ------------------------------------------
         if (subcommand === 'remove') {
-            const ytIdToRemove = interaction.options.getString('yt_channel');
+            // 👈 Changed to grab yt_channel_id
+            const ytIdToRemove = interaction.options.getString('yt_channel_id'); 
             
             // Delete from MongoDB
             const removedEntry = await YouTubeDB.findOneAndDelete({ ytChannelId: ytIdToRemove });
@@ -159,7 +160,7 @@ module.exports = {
         // LIST SUBCOMMAND
         // ------------------------------------------
         if (subcommand === 'list') {
-            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] }); // Deferred for safety
+            await interaction.deferReply({ flags: [MessageFlags.Ephemeral] }); 
             
             const dbChannels = await YouTubeDB.find({});
 
@@ -180,7 +181,7 @@ module.exports = {
                         new TextDisplayBuilder().setContent("# Youtube Poster") 
                     );
 
-                // Add text displays for each item on this page using the new format
+                // Add text displays for each item on this page
                 currentItems.forEach((item) => {
                     container.addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(
@@ -189,7 +190,7 @@ module.exports = {
                     );
                 });
 
-                // Action Row for Pagination (always attached)
+                // Action Row for Pagination
                 const actionRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId("yt_first")
@@ -223,7 +224,7 @@ module.exports = {
                 flags: [MessageFlags.IsComponentsV2] 
             });
 
-            // If there's only 1 page, the buttons are already disabled, so we can stop here
+            // If there's only 1 page, stop here
             if (maxPages === 1) return; 
 
             const collector = response.createMessageComponentCollector({ 
@@ -244,9 +245,7 @@ module.exports = {
             });
 
             collector.on('end', () => {
-                // When time expires, disable whatever buttons are currently showing
                 const disabledPage = generatePage(currentPage);
-                // Ensure everything on the final action row is disabled
                 disabledPage.components[disabledPage.components.length - 1].components.forEach(btn => btn.setDisabled(true));
                 interaction.editReply({ components: [disabledPage] }).catch(() => {});
             });
