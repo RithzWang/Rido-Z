@@ -72,8 +72,8 @@ module.exports = {
                     toggleButton.setLabel('Show Per-server Avatar Decoration');
                     if (!hasServerDeco) toggleButton.setDisabled(true).setLabel('No Per-server Avatar Decoration');
                 } else {
-                    toggleButton.setLabel('Show Global Decoration');
-                    if (!globalDeco) toggleButton.setDisabled(true).setLabel('No Global A-Decoration');
+                    toggleButton.setLabel('Show Global Avatar Decoration');
+                    if (!globalDeco) toggleButton.setDisabled(true).setLabel('No Global Avatar Decoration');
                 }
                 if (disableToggle) toggleButton.setDisabled(true);
 
