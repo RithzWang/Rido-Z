@@ -19,6 +19,15 @@ module.exports = {
    // channels: ['1456197056510165026', '1456197056510165029', '1456197056988319870'],
 
     async execute(message, args) {
+        // 👇 NEW: Array of allowed server IDs
+        const allowedGuilds = ['878565984108150824']; 
+        
+        // 👇 NEW: Check if the message is from a server, and if that server is in the allowed list.
+        // If not, return silently.
+        if (!message.guild || !allowedGuilds.includes(message.guild.id)) {
+            return; 
+        }
+
         try {
             // 1. Resolve User
             let targetUser = message.mentions.users.first();
@@ -27,7 +36,7 @@ module.exports = {
             }
             if (!targetUser && !args[0]) targetUser = message.author;
 
-            // 👇 CHANGE: If user not found, do nothing (return silently)
+            // If user not found, do nothing (return silently)
             if (!targetUser) return;
 
             // 2. Fetch Banner
