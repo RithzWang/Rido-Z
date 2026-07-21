@@ -35,7 +35,7 @@ module.exports = {
             // 2. Permission Check (Bot)
             if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageEmojisAndStickers)) {
                 return message.reply({ 
-                    content: `<:no:1528709599740559415> PLEASE GRANT ME **CREATE EXPRESSIONS** PERMISSION`, 
+                    content: `<:no:1528709599740559415> PLEASE GRANT ME __**CREATE EXPRESSIONS**__ PERMISSION`, 
                     flags: [MessageFlags.Ephemeral] 
                 });
             }
