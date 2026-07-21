@@ -57,7 +57,7 @@ module.exports = {
                 if (disableToggle) toggleButton.setDisabled(true);
 
                 return new ContainerBuilder()
-                    .setAccentColor(0x888888)
+                  //  .setAccentColor(0x888888)
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`))
                     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
                     .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(currentImage)))
