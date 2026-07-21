@@ -27,7 +27,7 @@ module.exports = {
             // 1. Permission Check (User)
             if (!message.member.permissions.has(PermissionFlagsBits.ManageEmojisAndStickers)) {
                 return message.reply({ 
-                    content: `You need the **Manage Emojis** permission to use this.`, 
+                    content: `<:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT`, 
                     flags: [MessageFlags.Ephemeral] 
                 });
             }
@@ -35,7 +35,7 @@ module.exports = {
             // 2. Permission Check (Bot)
             if (!message.guild.members.me.permissions.has(PermissionFlagsBits.ManageEmojisAndStickers)) {
                 return message.reply({ 
-                    content: `I need the **Manage Emojis** permission to do this.`, 
+                    content: `<:no:1528709599740559415> PLEASE GRANT ME **CREATE EXPRESSIONS** PERMISSION`, 
                     flags: [MessageFlags.Ephemeral] 
                 });
             }
