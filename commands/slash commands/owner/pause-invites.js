@@ -34,7 +34,7 @@ module.exports = {
         // 2. Check Bot Permissions
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageGuild)) {
             return interaction.editReply({ 
-                content: '<:no:1528709599740559415> PLEASE GRANT ME __**MANAGE SERVER**__ PERMISSION' 
+                content: '<:no:1528709599740559415> PLEASE GRANT ME __**MANAGE GUILD**__ PERMISSION' 
             });
         }
 
