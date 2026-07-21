@@ -49,7 +49,7 @@ module.exports = {
 
             if (!globalBanner && !displayBanner) {
                 return message.reply({ 
-                    content: `<:no:1528709599740559415> <@${targetUser.id}> HAS NO BANNER SET`, 
+                    content: `<:no:1528709599740559415> <@${targetUser.id}> HAS NO BANNER`, 
                     flags: [MessageFlags.Ephemeral, MessageFlags.SuppressNotifications],
                     allowedMentions: { parse: [], repliedUser: false }
                 });
@@ -105,7 +105,7 @@ module.exports = {
             collector.on('collect', async (i) => {
                 if (i.user.id !== message.author.id) {
                     return i.reply({ 
-                        content: `<:No:1297814819105144862> Only <@${message.author.id}> can use this button`, 
+                        content: `<:no:1528709599740559415> ONLY <@${message.author.id}> CAN TOGGLE THIS BUTTON`, 
                         flags: [MessageFlags.Ephemeral],
                         allowedMentions: { parse: [] }
                     });
