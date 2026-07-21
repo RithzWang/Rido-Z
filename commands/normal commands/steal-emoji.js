@@ -94,7 +94,7 @@ module.exports = {
                 }
 
                 const container = new ContainerBuilder()
-                    .setAccentColor(0x888888) // Green if success, Red if all fail
+                    // .setAccentColor(0x888888) // Green if success, Red if all fail
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`));
 
                 return container;
