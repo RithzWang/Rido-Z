@@ -15,7 +15,7 @@ const {
 module.exports = {
     name: 'banner',
     aliases: ['bn'],
-    description: 'Shows user banner',
+    description: 'Shows banner',
    // channels: ['1456197056510165026', '1456197056510165029', '1456197056988319870'],
 
     async execute(message, args) {
