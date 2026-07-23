@@ -18,6 +18,9 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
 
+// 👇 Import your new translation feature
+const messageTranslator = require('./feature/message-translate.js');
+
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
 
@@ -165,6 +168,29 @@ client.once('clientReady', async () => {
     }, 15000); // Updates every 15 seconds to avoid Discord rate limits
 
     // ==========================================
+    // DYNAMIC CHANNEL CLOCK
+    // ==========================================
+    setInterval(async () => {
+        try {
+            const targetChannelId = '1529986124565446758';
+            const timeChannel = client.channels.cache.get(targetChannelId);
+
+            if (timeChannel) {
+                // Get current GMT+7 time using moment-timezone
+                const now = moment().tz('Asia/Bangkok');
+                const timeString = `🕒 ${now.format('HH:mm')} (GMT+7)`;
+
+                // Only update if the name is actually different (saves API calls)
+                if (timeChannel.name !== timeString) {
+                    await timeChannel.setName(timeString);
+                }
+            }
+        } catch (error) {
+            console.error(`[Clock] Failed to update time channel:`, error.message);
+        }
+    }, 6 * 60 * 1000); // 6 minutes to respect Discord's rate limits
+
+    // ==========================================
     // YOUTUBE BACKGROUND CHECKER
     // ==========================================
     setInterval(async () => {
@@ -180,10 +206,10 @@ client.once('clientReady', async () => {
                     if (feed.items.length > 0) {
                         const latestVideo = feed.items[0]; // The first item is always the newest
 
-                        // 👇 FIXED: Turn the saved string into an array of the last 5 IDs
+                        // Turn the saved string into an array of the last 5 IDs
                         let savedIds = dbChannel.lastVideoId ? dbChannel.lastVideoId.split(',') : [];
 
-                        // 👇 FIXED: Check if the latest video's ID is ALREADY in our list
+                        // Check if the latest video's ID is ALREADY in our list
                         if (!savedIds.includes(latestVideo.id)) {
                             
                             // We found a new video! Let's send the message
@@ -217,6 +243,17 @@ client.once('clientReady', async () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    // ==========================================
+    // RUN AUTO-TRANSLATOR
+    // ==========================================
+    // If the translator returns true, it means it processed a message in that specific channel.
+    // We return early so it doesn't try to process it as a normal command.
+    const isTranslated = await messageTranslator(message);
+    if (isTranslated) return;
+
+    // ==========================================
+    // COMMAND EXECUTION
+    // ==========================================
     const args = message.content.trim().split(/\s+/);
     const commandName = args.shift().toLowerCase();
 
