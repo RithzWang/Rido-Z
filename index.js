@@ -180,17 +180,26 @@ client.once('clientReady', async () => {
                     if (feed.items.length > 0) {
                         const latestVideo = feed.items[0]; // The first item is always the newest
 
-                        // 3. Compare the newest video ID with the one saved in the database
-                        if (latestVideo.id !== dbChannel.lastVideoId) {
+                        // 👇 FIXED: Turn the saved string into an array of the last 5 IDs
+                        let savedIds = dbChannel.lastVideoId ? dbChannel.lastVideoId.split(',') : [];
+
+                        // 👇 FIXED: Check if the latest video's ID is ALREADY in our list
+                        if (!savedIds.includes(latestVideo.id)) {
                             
-                            // 4. We found a new video! Let's send the message
+                            // We found a new video! Let's send the message
                             const discordChannel = client.channels.cache.get(dbChannel.discordChannelId);
                             if (discordChannel) {
                                 await discordChannel.send(`**${latestVideo.author}** just posted a video!\n${latestVideo.link}`);
                             }
 
-                            // 5. Update the database so we don't announce this video again
-                            dbChannel.lastVideoId = latestVideo.id;
+                            // Add the new video ID to the front of the array
+                            savedIds.unshift(latestVideo.id);
+                            
+                            // Keep only the last 5 video IDs to prevent the string from getting too long
+                            if (savedIds.length > 5) savedIds.pop();
+
+                            // Save it back to the database as a string (e.g., "id1,id2,id3")
+                            dbChannel.lastVideoId = savedIds.join(',');
                             await dbChannel.save();
                         }
                     }
