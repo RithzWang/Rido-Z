@@ -32,7 +32,7 @@ module.exports = async (message) => {
         // 3. If a valid translation was found, reply without pinging
         if (finalTranslation && finalTranslation.toLowerCase() !== text.toLowerCase()) {
             await message.reply({
-                content: `${translationHeader}\n${finalTranslation}`,
+                content: `${translationHeader}\n> ${finalTranslation}`,
                 allowedMentions: { repliedUser: false } // Prevents pinging the user
             });
         }
