@@ -178,14 +178,14 @@ module.exports = {
 
                 const container = new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("# Youtube Poster") 
+                        new TextDisplayBuilder().setContent("## Youtube Poster") 
                     );
 
                 // Add text displays for each item on this page
                 currentItems.forEach((item) => {
                     container.addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(
-                            `## **[${item.ytChannelName}](${item.ytChannelLink})**\n-# Channel ID: \`${item.ytChannelId}\`\n-# Post In: <#${item.discordChannelId}>`
+                            `**[${item.ytChannelName}](${item.ytChannelLink})**\n-# <:th2:1456207122416275498> \`${item.ytChannelId}\`\n-# <:tl2:1456207124261634100> <#${item.discordChannelId}>`
                         )
                     );
                 });
