@@ -57,12 +57,14 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
                     content: `-# **TRANSLATED FROM __ARABIC__:**\n${finalTranslation}\n-# - AI translation is not 100% accurate`, 
+                    flags: [MessageFlags.SuppressNotifications],
                     allowedMentions: { repliedUser: false } 
                 });
             } else if (result.startsWith("AR:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
                     content: `-# **مترجم من __الإنجليزية__:**\n${finalTranslation}\n-# - الترجمة AI ليست دقيقة 100%`, 
+                    flags: [MessageFlags.SuppressNotifications],
                     allowedMentions: { repliedUser: false } 
                 });
             }
@@ -124,6 +126,7 @@ Do not add any extra explanations or conversational text.`;
 
             await message.reply({
                 content: `${finalHeader}\n${translatedText}\n${setting.warning}`,
+                flags: [MessageFlags.SuppressNotifications],
                 allowedMentions: { repliedUser: false }
             });
         }
