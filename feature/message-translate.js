@@ -29,7 +29,7 @@ Text: "${text}"`;
 
         if (result.startsWith("EN:")) {
             await message.reply({ 
-                content: `-# **Translation:**\n${result.substring(3).trim()}`, 
+                content: `-# **TRANSLATION:**\n${result.substring(3).trim()}`, 
                 allowedMentions: { repliedUser: false } 
             });
         } else if (result.startsWith("AR:")) {
