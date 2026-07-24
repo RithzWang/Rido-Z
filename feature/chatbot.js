@@ -1,3 +1,5 @@
+const { MessageFlags } = require('discord.js');
+
 module.exports = async (message) => {
     // 1. Only run in your specific chatbot channel
     if (message.channel.id !== '896936994880512050') return false;
