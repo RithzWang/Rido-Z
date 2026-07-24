@@ -53,7 +53,7 @@ Only return the prefixed translation and ignore emoji messages but do not ignore
             if (result.startsWith("EN:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
-                    content: `-# **Translation:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`, 
+                    content: `-# **TRANSLATION:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`, 
                     allowedMentions: { repliedUser: false } 
                 });
             } else if (result.startsWith("AR:")) {
@@ -70,8 +70,8 @@ Only return the prefixed translation and ignore emoji messages but do not ignore
         // GENERAL CHANNELS (English, Spanish, Thai, Arabic)
         // ==========================================
         const langMap = {
-            english: { name: 'English', header: '-# **Translation:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
-            spanish: { name: 'Spanish', header: '-# **Traducción:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
+            english: { name: 'English', header: '-# **TRANSLATION:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
+            spanish: { name: 'Spanish', header: '-# **TRADUCCIÓN:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
             arabic: { name: 'Arabic', header: '-# **ترجمة:**', warning: '-#   - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
             thai: { name: 'Thai', header: '-# **คำแปล:**', warning: '-#   - คำแปลโดย AI ไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
         };
