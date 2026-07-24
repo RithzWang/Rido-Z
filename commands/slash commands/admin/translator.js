@@ -24,8 +24,7 @@ module.exports = {
                             { name: 'English (Any -> English)', value: 'english' },
                             { name: 'Spanish (Any -> Spanish)', value: 'spanish' },
                             { name: 'Arabic (Any -> Arabic)', value: 'arabic' },
-                            { name: 'Thai (Any -> Thai)', value: 'thai' },
-                            { name: 'Bilingual (Arabic <-> English)', value: 'bilingual' }
+                            { name: 'Thai (Any -> Thai)', value: 'thai' }
                         ))
         )
         // 2. /translator list
