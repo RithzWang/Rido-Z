@@ -8,8 +8,9 @@ module.exports = async (message) => {
         if (!OPENAI_API_KEY) return false;
 
         const systemPrompt = `You are an expert, natural-sounding translator. 
-If the user's text is in Arabic (including any regional dialects or internet slang like Khaleeji, Egyptian, etc.), translate it to English and prefix your response with "EN:".
-If the user's text is in English, translate it to Arabic and prefix your response with "AR:".
+If the user's text is in Arabic (including regional dialects, interjections like "هاه", laughter like "ههههه", or slang), translate it to English and prefix your response with "EN:".
+If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
+Always convert laughter and interjections to natural local equivalents.
 Only return the prefixed translation, nothing else.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
