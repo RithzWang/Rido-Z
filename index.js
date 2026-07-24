@@ -23,6 +23,7 @@ const messageTranslator = require('./feature/message-translate.js');
 const messageTranslatorGeneral = require('./feature/translate-general-english.js');
 const messageTranslatorSpanish = require('./feature/translate-general-spanish.js'); // <-- NEW
 const messageTranslatorArabic = require('./feature/translate-general-arabic.js');   // <-- NEW
+const messageTranslatorThai = require('./feature/translate-general-thai.js');   // <-- NEW
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -255,6 +256,7 @@ client.on('messageCreate', async (message) => {
     if (await messageTranslatorGeneral(message)) return;
     if (await messageTranslatorSpanish(message)) return; // <-- NEW
     if (await messageTranslatorArabic(message)) return;  // <-- NEW
+    if (await messageTranslatorThai(message)) return;  // <-- NEW
 
     // ==========================================
     // COMMAND EXECUTION
