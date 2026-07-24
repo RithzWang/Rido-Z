@@ -4,29 +4,33 @@ module.exports = async (message) => {
 
     try {
         const text = message.content.trim();
-        const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
-        if (!DEEPL_API_KEY) return false;
-        
-        const response = await fetch('https://api-free.deepl.com/v2/translate', {
-            method: 'POST',
-            headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: [text], target_lang: 'AR' }) // Target: Arabic
-        });
-        const data = await response.json();
-        
-        const detectedLang = data.translations[0].detected_source_language; 
-        const finalTranslation = data.translations[0].text;
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+        if (!GEMINI_API_KEY) return false;
 
-        // Only reply if the language wasn't already Arabic
-        if (detectedLang !== 'AR' && finalTranslation.toLowerCase() !== text.toLowerCase()) {
-            await message.reply({
-                content: `-# **ترجمة:**\n${finalTranslation}`,
+        const prompt = `Translate the following text to Arabic. It may contain internet slang. If it is ALREADY entirely in Arabic, reply with exactly the word: ALREADY_ARABIC. 
+Text: "${text}"`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.3 }
+            })
+        });
+
+        const data = await response.json();
+        const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+
+        if (result && !result.includes('ALREADY_ARABIC')) {
+            await message.reply({ 
+                content: `-# **ترجمة:**\n${result}`, 
                 allowedMentions: { repliedUser: false } 
             });
         }
         return true; 
     } catch (error) {
-        console.error("❌ DeepL Arabic Translate Error:", error);
+        console.error("❌ Gemini Arabic Translate Error:", error);
         return false;
     }
 };
