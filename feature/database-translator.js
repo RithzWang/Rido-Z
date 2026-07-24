@@ -58,7 +58,7 @@ Only return the prefixed translation, nothing else.`;
             } else if (result.startsWith("AR:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
-                    content: `-# **ترجمة:**\n${finalTranslation}\n-#   - الترجمة AI ليست دقيقة 100%`, 
+                    content: `-# **ترجمة:**\n${finalTranslation}\n-#   - الترجمة الآلية ليست دقيقة 100%`, 
                     allowedMentions: { repliedUser: false } 
                 });
             }
@@ -70,18 +70,20 @@ Only return the prefixed translation, nothing else.`;
         // ==========================================
         const langMap = {
             english: { name: 'English', header: '-# **Translation:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
-            spanish: { name: 'Spanish', header: '-# **Traducción:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
-            arabic: { name: 'Arabic', header: '-# **ترجمة:**', warning: '-#   - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
-            thai: { name: 'Thai', header: '-# **คำแปล:**', warning: '-#   - คำแปลโดย AI อาจไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
+            spanish: { name: 'Spanish', header: '-# **Traducción:**', warning: '-#   - La traducción automática no es 100% precisa', ignore: 'ALREADY_SPANISH' },
+            arabic: { name: 'Arabic', header: '-# **ترجمة:**', warning: '-#   - الترجمة الآلية ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
+            thai: { name: 'Thai', header: '-# **คำแปล:**', warning: '-#   - การแปลภาษาอาจไม่ถูกต้อง 100%', ignore: 'ALREADY_THAI' }
         };
 
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-        systemPrompt = `You are a highly accurate translator. Translate the user's message into natural ${setting.name}. 
-Translate all text, including interjections, laughter, internet slang, and dialects into local native equivalents.
-If the text is ALREADY written natively in ${setting.name}, reply with strictly the word: ${setting.ignore}
-Do not add any extra explanations.`;
+        // 👇 UPDATED PROMPT: Forces translation from ANY language into the target language.
+        systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
+Whether the user speaks in Arabic, English, Spanish, Thai, or any other language, you MUST return the translation in ${setting.name}.
+Translate all text, including interjections (e.g., "هاه", "huh"), laughter (e.g., "hahahaha", "ههههه"), internet slang, and dialects into local native equivalents in ${setting.name}.
+If the text is ALREADY written entirely natively in ${setting.name}, reply with strictly the word: ${setting.ignore}
+Do not add any extra explanations or conversational text. Only return the translation or the ignore code.`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
