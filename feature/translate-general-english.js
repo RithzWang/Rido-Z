@@ -24,7 +24,7 @@ Text: "${text}"`;
 
         if (result && !result.includes('ALREADY_ENGLISH')) {
             await message.reply({ 
-                content: `-# **Translation:**\n${result}`, 
+                content: `-# **TRANSLATION:**\n${result}`, 
                 allowedMentions: { repliedUser: false } 
             });
         }
