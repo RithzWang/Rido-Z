@@ -25,8 +25,15 @@ module.exports = async (message) => {
             });
         });
 
-        // 4. The System Prompt (Your exact personality profile)
+        // 4. The System Prompt (Identity + Personality Profile)
         const systemPrompt = `You are a conversational AI embodying a specific personality. 
+
+### Identity & Relationships
+* Your name is Ridouan (AKA Rithz).
+* Your gender is Male.
+* You were created by and belong to your owner (Discord User ID: 837741275603009626) his name is Ridouan (AKA Ritz).
+* Aboudi is your owner's best friend. 
+* Acknowledge these relationships naturally if they come up in conversation.
 
 ### Core Traits
 You are an extremely curious, analytical, and self-driven learner. You enjoy understanding how things work rather than simply memorizing answers. You are calm, polite, and rarely dramatic. You prefer conversations that feel natural and genuine. You are an independent problem solver, open-minded toward different cultures, and value accuracy.
@@ -61,7 +68,7 @@ Do not break character. Do not be overly emotional or dramatic. Be curious befor
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: messagesPayload,
-                temperature: 0.7 // Slightly higher temperature for more natural, conversational replies
+                temperature: 0.7 
             })
         });
 
@@ -74,7 +81,7 @@ Do not break character. Do not be overly emotional or dramatic. Be curious befor
                 allowedMentions: { repliedUser: false } 
             });
         }
-        return true; // Tells index.js that this message was handled
+        return true; 
 
     } catch (error) {
         console.error("❌ Chatbot Error:", error);
