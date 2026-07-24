@@ -58,7 +58,7 @@ Only return the prefixed translation, nothing else.`;
             } else if (result.startsWith("AR:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
-                    content: `-# **ترجمة:**\n${finalTranslation}\n-#   - الترجمة الآلية ليست دقيقة 100%`, 
+                    content: `-# **ترجمة:**\n${finalTranslation}\n-#   - الترجمة AI ليست دقيقة 100%`, 
                     allowedMentions: { repliedUser: false } 
                 });
             }
@@ -70,9 +70,9 @@ Only return the prefixed translation, nothing else.`;
         // ==========================================
         const langMap = {
             english: { name: 'English', header: '-# **Translation:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
-            spanish: { name: 'Spanish', header: '-# **Traducción:**', warning: '-#   - La traducción automática no es 100% precisa', ignore: 'ALREADY_SPANISH' },
-            arabic: { name: 'Arabic', header: '-# **ترجمة:**', warning: '-#   - الترجمة الآلية ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
-            thai: { name: 'Thai', header: '-# **คำแปล:**', warning: '-#   - การแปลภาษาอาจไม่ถูกต้อง 100%', ignore: 'ALREADY_THAI' }
+            spanish: { name: 'Spanish', header: '-# **Traducción:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
+            arabic: { name: 'Arabic', header: '-# **ترجمة:**', warning: '-#   - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
+            thai: { name: 'Thai', header: '-# **คำแปล:**', warning: '-#   - คำแปลโดย AI ไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
         };
 
         const setting = langMap[channelLang];
