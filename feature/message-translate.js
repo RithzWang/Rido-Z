@@ -4,71 +4,49 @@ module.exports = async (message) => {
 
     try {
         const text = message.content.trim();
-        let finalTranslation = "";
-        let detectedLang = "";
-        let usedHeader = "";
-        let warningText = "";
+        const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+        if (!OPENAI_API_KEY) return false;
 
-        // --- 1. TRY GOOGLE TRANSLATE FIRST ---
-        try {
-            const urlEn = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-            const resEn = await fetch(urlEn);
-            const dataEn = await resEn.json();
+        const systemPrompt = `You are an expert, natural-sounding translator. 
+If the user's text is in Arabic (including any regional dialects or internet slang like Khaleeji, Egyptian, etc.), translate it to English and prefix your response with "EN:".
+If the user's text is in English, translate it to Arabic and prefix your response with "AR:".
+Only return the prefixed translation, nothing else.`;
 
-            detectedLang = dataEn[2] || "";
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: text }
+                ],
+                temperature: 0.3
+            })
+        });
 
-            if (detectedLang.startsWith('ar')) {
-                finalTranslation = dataEn[0].map(item => item[0]).join('');
-                usedHeader = "-# **Translation:**";
-                warningText = "-#   - AI translation is not 100% accurate";
-            } else if (detectedLang.startsWith('en')) {
-                const urlAr = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
-                const resAr = await fetch(urlAr);
-                const dataAr = await resAr.json();
-                finalTranslation = dataAr[0].map(item => item[0]).join('');
-                usedHeader = "-# **ترجمة:**";
-                warningText = "-#   - الترجمة AI ليست دقيقة 100%";
-            }
-        } catch (googleError) {
-            console.warn("⚠️ Google Translate failed, falling back to DeepL:", googleError.message);
-        }
+        const data = await response.json();
+        const result = data.choices?.[0]?.message?.content?.trim() || "";
 
-        // --- 2. FALLBACK TO DEEPL IF GOOGLE FAILED ---
-        if (!finalTranslation && process.env.DEEPL_API_KEY) {
-            const response = await fetch('https://api-free.deepl.com/v2/translate', {
-                method: 'POST',
-                headers: { 'Authorization': `DeepL-Auth-Key ${process.env.DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: [text], target_lang: 'EN-US' })
+        if (result.startsWith("EN:")) {
+            const finalTranslation = result.substring(3).trim();
+            await message.reply({ 
+                content: `-# **Translation:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`, 
+                allowedMentions: { repliedUser: false } 
             });
-            const data = await response.json();
-            const deeplDetected = data.translations[0].detected_source_language;
-
-            if (deeplDetected === 'AR') {
-                finalTranslation = data.translations[0].text;
-                usedHeader = "-# **Translation:**";
-                warningText = "-#   - AI translation is not 100% accurate";
-            } else if (deeplDetected === 'EN') {
-                const resAr = await fetch('https://api-free.deepl.com/v2/translate', {
-                    method: 'POST',
-                    headers: { 'Authorization': `DeepL-Auth-Key ${process.env.DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: [text], target_lang: 'AR' })
-                });
-                const dataAr = await resAr.json();
-                finalTranslation = dataAr.translations[0].text;
-                usedHeader = "-# **ترجمة:**";
-                warningText = "-#   - الترجمة الآلية ليست دقيقة 100%";
-            }
-        }
-
-        if (finalTranslation && finalTranslation.toLowerCase() !== text.toLowerCase()) {
-            await message.reply({
-                content: `${usedHeader}\n${finalTranslation}\n${warningText}`,
-                allowedMentions: { repliedUser: false }
+        } else if (result.startsWith("AR:")) {
+            const finalTranslation = result.substring(3).trim();
+            await message.reply({ 
+                content: `-# **ترجمة:**\n${finalTranslation}\n-#   - الترجمة AI ليست دقيقة 100%`, 
+                allowedMentions: { repliedUser: false } 
             });
         }
-        return true;
+        return true; 
     } catch (error) {
-        console.error("❌ Translate Error (Ar <-> En):", error);
+        console.error("❌ OpenAI Translate Error (Ar <-> En):", error);
         return false;
     }
 };
