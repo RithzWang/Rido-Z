@@ -18,9 +18,11 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
 
-// 👇 Import your new translation features
+// 👇 Import your translation features
 const messageTranslator = require('./feature/message-translate.js');
-const messageTranslatorGeneral = require('./feature/message-translate-general.js'); // <-- ADDED THIS
+const messageTranslatorGeneral = require('./feature/message-translate-general.js');
+const messageTranslatorSpanish = require('./feature/message-general-spanish.js'); // <-- NEW
+const messageTranslatorArabic = require('./feature/message-general-arabic.js');   // <-- NEW
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -247,10 +249,12 @@ client.on('messageCreate', async (message) => {
     // ==========================================
     // RUN AUTO-TRANSLATORS
     // ==========================================
-    // If either translator returns true, it means it processed a message in that specific channel.
+    // If any translator returns true, it processed a message in its assigned channel.
     // We return early so it doesn't try to process it as a normal command.
     if (await messageTranslator(message)) return;
-    if (await messageTranslatorGeneral(message)) return; // <-- ADDED THIS
+    if (await messageTranslatorGeneral(message)) return;
+    if (await messageTranslatorSpanish(message)) return; // <-- NEW
+    if (await messageTranslatorArabic(message)) return;  // <-- NEW
 
     // ==========================================
     // COMMAND EXECUTION
