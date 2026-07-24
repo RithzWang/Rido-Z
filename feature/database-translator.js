@@ -56,13 +56,13 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
             } else if (result.startsWith("EN:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
-                    content: `-# **TRANSLATION FROM __ARABIC__:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`, 
+                    content: `-# **TRANSLATED FROM __ARABIC__:**\n${finalTranslation}\n-# - AI translation is not 100% accurate`, 
                     allowedMentions: { repliedUser: false } 
                 });
             } else if (result.startsWith("AR:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
-                    content: `-# **ترجمة من __الإنجليزية__:**\n${finalTranslation}\n-#   - الترجمة AI ليست دقيقة 100%`, 
+                    content: `-# **مترجم من __الإنجليزية__:**\n${finalTranslation}\n-# - الترجمة AI ليست دقيقة 100%`, 
                     allowedMentions: { repliedUser: false } 
                 });
             }
@@ -73,10 +73,10 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
         // GENERAL CHANNELS (English, Spanish, Thai, Arabic)
         // ==========================================
         const langMap = {
-            english: { name: 'English', header: '-# **TRANSLATION FROM __{LANG}__:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
-            spanish: { name: 'Spanish', header: '-# **TRADUCCIÓN DEL __{LANG}__:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
-            arabic: { name: 'Arabic', header: '-# **ترجمة من __{LANG}__:**', warning: '-#   - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
-            thai: { name: 'Thai', header: '-# **คำแปลจาก__{LANG}__:**', warning: '-#   - คำแปลโดย AI ไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
+            english: { name: 'English', header: '-# **TRANSLATED FROM __{LANG}__:**', warning: '-# - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
+            spanish: { name: 'Spanish', header: '-# **TRADUCIDO DEL __{LANG}__:**', warning: '-# - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
+            arabic: { name: 'Arabic', header: '-# **مترجم من __{LANG}__:**', warning: '-# - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
+            thai: { name: 'Thai', header: '-# **แปลจาก__{LANG}__:**', warning: '-# - คำแปลโดย AI ไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
         };
 
         const setting = langMap[channelLang];
