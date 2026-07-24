@@ -20,7 +20,7 @@ const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches
 
 // 👇 Import your translation features
 const messageTranslator = require('./feature/message-translate.js');
-const messageTranslatorGeneral = require('./feature/message-translate-general.js');
+const messageTranslatorGeneral = require('./feature/translate-general-english.js');
 const messageTranslatorSpanish = require('./feature/translate-general-spanish.js'); // <-- NEW
 const messageTranslatorArabic = require('./feature/translate-general-arabic.js');   // <-- NEW
 
