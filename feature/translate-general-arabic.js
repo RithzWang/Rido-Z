@@ -1,35 +1,32 @@
 module.exports = async (message) => {
-    // 1. Only run in the Arabic translation channel
     if (message.channel.id !== '880431177499029534') return false;
     if (!message.content.trim()) return false;
 
     try {
         const text = message.content.trim();
+        const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
+        if (!DEEPL_API_KEY) return false;
         
-        // 2. Auto-detect and translate to Arabic (tl=ar)
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch('https://api-free.deepl.com/v2/translate', {
+            method: 'POST',
+            headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: [text], target_lang: 'AR' }) // Target: Arabic
+        });
+        const data = await response.json();
         
-        const detectedLang = data[2]; 
-        let finalTranslation = "";
+        const detectedLang = data.translations[0].detected_source_language; 
+        const finalTranslation = data.translations[0].text;
 
-        // Only translate if the detected language is NOT already Arabic
-        if (!detectedLang.startsWith('ar')) {
-            finalTranslation = data[0].map(item => item[0]).join('');
-        }
-
-        // 3. Reply if there is a translation
-        if (finalTranslation && finalTranslation.toLowerCase() !== text.toLowerCase()) {
+        // Only reply if the language wasn't already Arabic
+        if (detectedLang !== 'AR' && finalTranslation.toLowerCase() !== text.toLowerCase()) {
             await message.reply({
                 content: `-# **ترجمة:**\n${finalTranslation}`,
                 allowedMentions: { repliedUser: false } 
             });
         }
-        
         return true; 
     } catch (error) {
-        console.error("❌ Arabic Translate Error:", error);
+        console.error("❌ DeepL Arabic Translate Error:", error);
         return false;
     }
 };
