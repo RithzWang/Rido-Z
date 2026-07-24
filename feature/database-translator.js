@@ -33,6 +33,7 @@ module.exports = async (message) => {
             systemPrompt = `You are an expert, natural-sounding translator. 
 If the user's text is in Arabic (including regional dialects, interjections like "هاه", laughter like "ههههه", or slang), translate it to English and prefix your response with "EN:".
 If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
+Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" means "I will sleep" ("بنام"), not "in the name". Condense elongated words to their base meaning before translating.
 Always convert laughter and interjections to natural local equivalents.
 Only return the prefixed translation and ignore emoji messages but do not ignore emoji in messages like "hello 😃", nothing else.`;
 
@@ -78,10 +79,10 @@ Only return the prefixed translation and ignore emoji messages but do not ignore
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-        // 👇 UPDATED PROMPT: Forces translation from ANY language into the target language.
         systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
 Whether the user speaks in Arabic, English, Spanish, Thai, or any other language, you MUST return the translation in ${setting.name}.
 Translate all text, including interjections (e.g., "هاه", "huh"), laughter (e.g., "hahahaha", "ههههه"), internet slang, and dialects into local native equivalents in ${setting.name}.
+Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" in Arabic means "I will sleep". Condense elongated words to their base meaning before translating.
 If the text is ALREADY written entirely natively in ${setting.name}, reply with strictly the word: ${setting.ignore}
 Do not add any extra explanations or conversational text. Only return the translation or the ignore code.`;
 
