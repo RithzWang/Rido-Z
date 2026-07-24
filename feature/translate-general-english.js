@@ -1,5 +1,5 @@
 module.exports = async (message) => {
-    if (message.channel.id !== '878582639215407134') return false;
+    if (message.channel.id !== '896754261680087080') return false;
     if (!message.content.trim()) return false;
 
     try {
