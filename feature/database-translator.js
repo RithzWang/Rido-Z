@@ -35,7 +35,8 @@ If the user's text is in Arabic (including regional dialects, interjections like
 If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
 Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" means "I will sleep" ("بنام"), not "in the name". Condense elongated words to their base meaning before translating.
 Always convert laughter and interjections to natural local equivalents.
-Only return the prefixed translation and ignore only-emoji-messages but do not ignore emoji in messages like "hello 😃", nothing else.`;
+IMPORTANT: You MUST preserve all standard emojis and Discord custom emojis (which look like <:name:id> or <a:name:id>) exactly as they appear in the original message. Do not translate, remove, or modify them.
+Only return the prefixed translation. If the message consists ONLY of emojis (no text to translate), reply with exactly: ALREADY_BILINGUAL`;
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -50,7 +51,9 @@ Only return the prefixed translation and ignore only-emoji-messages but do not i
             const data = await res.json();
             const result = data.choices?.[0]?.message?.content?.trim() || "";
 
-            if (result.startsWith("EN:")) {
+            if (result === "ALREADY_BILINGUAL") {
+                return false; 
+            } else if (result.startsWith("EN:")) {
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
                     content: `-# **TRANSLATION FROM __ARABIC__:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`, 
@@ -69,7 +72,6 @@ Only return the prefixed translation and ignore only-emoji-messages but do not i
         // ==========================================
         // GENERAL CHANNELS (English, Spanish, Thai, Arabic)
         // ==========================================
-        // Notice we added a {LANG} placeholder in the headers below
         const langMap = {
             english: { name: 'English', header: '-# **TRANSLATION FROM __{LANG}__:**', warning: '-#   - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
             spanish: { name: 'Spanish', header: '-# **TRADUCCIÓN DEL __{LANG}__:**', warning: '-#   - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
@@ -80,13 +82,13 @@ Only return the prefixed translation and ignore only-emoji-messages but do not i
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-        // Instructing the AI to format its answer so we can extract the detected language
         systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
 Whether the user speaks in Arabic, English, Spanish, Thai, or any other language, you MUST return the translation in ${setting.name}.
 Translate all text, including interjections (e.g., "هاه", "huh"), laughter (e.g., "hahahaha", "ههههه"), internet slang, and dialects into local native equivalents in ${setting.name}.
 Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" in Arabic means "I will sleep". Condense elongated words to their base meaning before translating.
+IMPORTANT: You MUST preserve all standard emojis and Discord custom emojis (which look like <:name:id> or <a:name:id>) exactly as they appear in the original message. Do not translate, remove, or modify them.
 
-If the text is ALREADY written entirely natively in ${setting.name}, reply with strictly the word: ${setting.ignore}
+If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis (no translatable text), reply with strictly the word: ${setting.ignore}
 
 Otherwise, you MUST format your response exactly like this:
 SRC: [Source Language]
@@ -112,16 +114,12 @@ Do not add any extra explanations or conversational text.`;
             let translatedText = result;
             let detectedLang = "UNKNOWN";
 
-            // Parse the AI's response to separate the language from the translation
             if (result.startsWith("SRC:")) {
                 const lines = result.split('\n');
-                // Grab the first line, remove "SRC:", and make it uppercase for English/Spanish
                 detectedLang = lines.shift().substring(4).trim().toUpperCase();
-                // The rest of the lines are the actual translation
                 translatedText = lines.join('\n').trim();
             }
 
-            // Replace the {LANG} placeholder in our template with the detected language
             const finalHeader = setting.header.replace('{LANG}', detectedLang);
 
             await message.reply({
