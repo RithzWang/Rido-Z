@@ -18,12 +18,8 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
 
-// 👇 Import your translation features
-const messageTranslator = require('./feature/message-translate.js');
-const messageTranslatorGeneral = require('./feature/english-general-translate.js');
-const messageTranslatorSpanish = require('./feature/spanish-general-translate.js'); // <-- NEW
-const messageTranslatorArabic = require('./feature/arabic-general-translate.js');   // <-- NEW
-const messageTranslatorThai = require('./feature/thai-general-translate.js');   // <-- NEW
+// 👇 Import your new unified Database Translator
+const databaseTranslator = require('./feature/database-translator.js');
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -248,15 +244,9 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     // ==========================================
-    // RUN AUTO-TRANSLATORS
+    // RUN DYNAMIC DATABASE TRANSLATOR
     // ==========================================
-    // If any translator returns true, it processed a message in its assigned channel.
-    // We return early so it doesn't try to process it as a normal command.
-    if (await messageTranslator(message)) return;
-    if (await messageTranslatorGeneral(message)) return;
-    if (await messageTranslatorSpanish(message)) return; // <-- NEW
-    if (await messageTranslatorArabic(message)) return;  // <-- NEW
-    if (await messageTranslatorThai(message)) return;  // <-- NEW
+    if (await databaseTranslator(message)) return;
 
     // ==========================================
     // COMMAND EXECUTION
