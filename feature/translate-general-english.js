@@ -19,7 +19,7 @@ module.exports = async (message) => {
 
         if (detectedLang !== 'EN' && finalTranslation.toLowerCase() !== text.toLowerCase()) {
             await message.reply({
-                content: `-# **Translation:**\n${finalTranslation}`,
+                content: `-# **Translation:**\n${finalTranslation}\n-#   - AI translation is not 100% accurate`,
                 allowedMentions: { repliedUser: false } 
             });
         }
