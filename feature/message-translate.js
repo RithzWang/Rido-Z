@@ -4,50 +4,71 @@ module.exports = async (message) => {
 
     try {
         const text = message.content.trim();
-        const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
-        if (!DEEPL_API_KEY) return false;
-
-        // Default request: Translate to English (EN-US)
-        let response = await fetch('https://api-free.deepl.com/v2/translate', {
-            method: 'POST',
-            headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: [text], target_lang: 'EN-US' })
-        });
-        let data = await response.json();
-        
-        const detectedLang = data.translations[0].detected_source_language; 
         let finalTranslation = "";
-        let translationHeader = "";
+        let detectedLang = "";
+        let usedHeader = "";
         let warningText = "";
 
-        if (detectedLang === 'AR') {
-            // It was Arabic -> English
-            finalTranslation = data.translations[0].text;
-            translationHeader = "-# **Translation:**";
-            warningText = "-#   - AI translation is not 100% accurate";
-        } 
-        else if (detectedLang === 'EN') {
-            // It was English -> Arabic
-            response = await fetch('https://api-free.deepl.com/v2/translate', {
+        // --- 1. TRY GOOGLE TRANSLATE FIRST ---
+        try {
+            const urlEn = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+            const resEn = await fetch(urlEn);
+            const dataEn = await resEn.json();
+
+            detectedLang = dataEn[2] || "";
+
+            if (detectedLang.startsWith('ar')) {
+                finalTranslation = dataEn[0].map(item => item[0]).join('');
+                usedHeader = "-# **Translation:**";
+                warningText = "-#   - AI translation is not 100% accurate";
+            } else if (detectedLang.startsWith('en')) {
+                const urlAr = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
+                const resAr = await fetch(urlAr);
+                const dataAr = await resAr.json();
+                finalTranslation = dataAr[0].map(item => item[0]).join('');
+                usedHeader = "-# **ترجمة:**";
+                warningText = "-#   - الترجمة الآلية ليست دقيقة 100%";
+            }
+        } catch (googleError) {
+            console.warn("⚠️ Google Translate failed, falling back to DeepL:", googleError.message);
+        }
+
+        // --- 2. FALLBACK TO DEEPL IF GOOGLE FAILED ---
+        if (!finalTranslation && process.env.DEEPL_API_KEY) {
+            const response = await fetch('https://api-free.deepl.com/v2/translate', {
                 method: 'POST',
-                headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: [text], target_lang: 'AR' })
+                headers: { 'Authorization': `DeepL-Auth-Key ${process.env.DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: [text], target_lang: 'EN-US' })
             });
-            data = await response.json();
-            finalTranslation = data.translations[0].text;
-            translationHeader = "-# **ترجمة:**";
-            warningText = "-#   - الترجمة AI ليست دقيقة 100%";
+            const data = await response.json();
+            const deeplDetected = data.translations[0].detected_source_language;
+
+            if (deeplDetected === 'AR') {
+                finalTranslation = data.translations[0].text;
+                usedHeader = "-# **Translation:**";
+                warningText = "-#   - AI translation is not 100% accurate";
+            } else if (deeplDetected === 'EN') {
+                const resAr = await fetch('https://api-free.deepl.com/v2/translate', {
+                    method: 'POST',
+                    headers: { 'Authorization': `DeepL-Auth-Key ${process.env.DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: [text], target_lang: 'AR' })
+                });
+                const dataAr = await resAr.json();
+                finalTranslation = dataAr.translations[0].text;
+                usedHeader = "-# **ترجمة:**";
+                warningText = "-#   - الترجمة الآلية ليست دقيقة 100%";
+            }
         }
 
         if (finalTranslation && finalTranslation.toLowerCase() !== text.toLowerCase()) {
             await message.reply({
-                content: `${translationHeader}\n${finalTranslation}\n${warningText}`,
-                allowedMentions: { repliedUser: false } 
+                content: `${usedHeader}\n${finalTranslation}\n${warningText}`,
+                allowedMentions: { repliedUser: false }
             });
         }
-        return true; 
+        return true;
     } catch (error) {
-        console.error("❌ DeepL Translate Error (Ar <-> En):", error);
+        console.error("❌ Translate Error (Ar <-> En):", error);
         return false;
     }
 };
