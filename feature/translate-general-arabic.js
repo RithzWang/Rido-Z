@@ -7,9 +7,9 @@ module.exports = async (message) => {
         const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
         if (!OPENAI_API_KEY) return false;
 
-        const systemPrompt = `You are a highly accurate translator. Translate the user's message into Arabic. 
-The text might contain internet slang. 
-If the text is ALREADY entirely in Arabic, reply with exactly the word: ALREADY_ARABIC
+        const systemPrompt = `You are a highly accurate translator. Translate the user's message into natural Arabic. 
+Translate all text, including laughter (e.g. "hahahaha" or "lol" -> "هههههههه"), interjections, internet slang, and non-Arabic script.
+If the text is ALREADY written in Arabic script, reply with strictly the word: ALREADY_ARABIC
 Do not add any extra explanations.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
