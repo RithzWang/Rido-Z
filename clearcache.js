@@ -62,8 +62,8 @@ async function runCleanup() {
     // ==========================================
     // 3. WIPE OLD DISCORD SLASH COMMANDS
     // ==========================================
-    const token = process.env.DISCORD_TOKEN;
-    const clientId = process.env.CLIENT_ID; // Your bot's client/application ID
+    const token = process.env.BOT_TOKEN;
+    const clientId = "1005683648441372692"; // Your bot's client/application ID
 
     if (token && clientId) {
         try {
