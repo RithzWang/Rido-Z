@@ -107,6 +107,7 @@ Do not break character. Do not be overly emotional or dramatic. Be curious befor
         if (reply) {
             await message.reply({ 
                 content: reply, 
+                flags: [MessageFlags.SuppressNotifications],
                 allowedMentions: { repliedUser: false } 
             });
         }
