@@ -20,10 +20,10 @@ const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches
 
 // 👇 Import your translation features
 const messageTranslator = require('./feature/message-translate.js');
-const messageTranslatorGeneral = require('./feature/translate-general-english.js');
-const messageTranslatorSpanish = require('./feature/translate-general-spanish.js'); // <-- NEW
-const messageTranslatorArabic = require('./feature/translate-general-arabic.js');   // <-- NEW
-const messageTranslatorThai = require('./feature/translate-general-thai.js');   // <-- NEW
+const messageTranslatorGeneral = require('./feature/english-general-translate.js');
+const messageTranslatorSpanish = require('./feature/spanish-general-translate.js'); // <-- NEW
+const messageTranslatorArabic = require('./feature/arabic-general-translate.js');   // <-- NEW
+const messageTranslatorThai = require('./feature/thai-general-translate.js');   // <-- NEW
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
