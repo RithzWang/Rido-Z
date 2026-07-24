@@ -1,47 +1,50 @@
 module.exports = async (message) => {
-    // 1. Check if it's the correct channel and the message isn't empty
     if (message.channel.id !== '907979176236163133') return false;
     if (!message.content.trim()) return false;
 
     try {
         const text = message.content.trim();
+        const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
+        if (!DEEPL_API_KEY) return false;
+
+        // Default request: Translate to English (EN-US)
+        let response = await fetch('https://api-free.deepl.com/v2/translate', {
+            method: 'POST',
+            headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: [text], target_lang: 'EN-US' })
+        });
+        let data = await response.json();
         
-        // 2. Send request to auto-detect language and translate to English
-        const urlEn = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
-        const resEn = await fetch(urlEn);
-        const dataEn = await resEn.json();
-        
-        const detectedLang = dataEn[2]; // 'ar' for Arabic, 'en' for English
+        const detectedLang = data.translations[0].detected_source_language; 
         let finalTranslation = "";
         let translationHeader = "";
 
-        if (detectedLang.startsWith('ar')) {
-            // It is Arabic, translating to English
-            finalTranslation = dataEn[0].map(item => item[0]).join('');
+        if (detectedLang === 'AR') {
+            // It was Arabic, so the English translation is ready
+            finalTranslation = data.translations[0].text;
             translationHeader = "-# **Translation:**";
         } 
-        else if (detectedLang.startsWith('en')) {
-            // It is English, translating to Arabic
-            const urlAr = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=${encodeURIComponent(text)}`;
-            const resAr = await fetch(urlAr);
-            const dataAr = await resAr.json();
-            finalTranslation = dataAr[0].map(item => item[0]).join('');
+        else if (detectedLang === 'EN') {
+            // It was English, so we need to make a new request to translate to Arabic
+            response = await fetch('https://api-free.deepl.com/v2/translate', {
+                method: 'POST',
+                headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: [text], target_lang: 'AR' })
+            });
+            data = await response.json();
+            finalTranslation = data.translations[0].text;
             translationHeader = "-# **ترجمة:**";
         }
 
-        // 3. If a valid translation was found, reply without pinging
         if (finalTranslation && finalTranslation.toLowerCase() !== text.toLowerCase()) {
             await message.reply({
                 content: `${translationHeader}\n${finalTranslation}`,
-                allowedMentions: { repliedUser: false } // Prevents pinging the user
+                allowedMentions: { repliedUser: false } 
             });
         }
-        
-        // Return true to let index.js know we handled this message
         return true; 
-
     } catch (error) {
-        console.error("❌ Auto-Translate Error:", error);
+        console.error("❌ DeepL Translate Error (Ar <-> En):", error);
         return false;
     }
 };
