@@ -4,33 +4,28 @@ module.exports = async (message) => {
 
     try {
         const text = message.content.trim();
-        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-        if (!GEMINI_API_KEY) return false;
+        const DEEPL_API_KEY = process.env.DEEPL_API_KEY;
+        if (!DEEPL_API_KEY) return false;
 
-        const prompt = `Translate the following text to English. It may contain internet slang or dialects. If it is ALREADY entirely in English, reply with exactly the word: ALREADY_ENGLISH. 
-Text: "${text}"`;
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch('https://api-free.deepl.com/v2/translate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.3 }
-            })
+            headers: { 'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: [text], target_lang: 'EN-US' }) 
         });
-
         const data = await response.json();
-        const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+        
+        const detectedLang = data.translations[0].detected_source_language; 
+        const finalTranslation = data.translations[0].text;
 
-        if (result && !result.includes('ALREADY_ENGLISH')) {
-            await message.reply({ 
-                content: `-# **TRANSLATION:**\n${result}`, 
+        if (detectedLang !== 'EN' && finalTranslation.toLowerCase() !== text.toLowerCase()) {
+            await message.reply({
+                content: `-# **Translation:**\n${finalTranslation}`,
                 allowedMentions: { repliedUser: false } 
             });
         }
         return true; 
     } catch (error) {
-        console.error("❌ Gemini General Translate Error (Any -> En):", error);
+        console.error("❌ DeepL General Translate Error (Any -> En):", error);
         return false;
     }
 };
