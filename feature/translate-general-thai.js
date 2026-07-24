@@ -7,9 +7,9 @@ module.exports = async (message) => {
         const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
         if (!OPENAI_API_KEY) return false;
 
-        const systemPrompt = `You are a highly accurate translator. Translate the user's message into Thai. 
-The text might contain internet slang or dialects. 
-If the text is ALREADY entirely in Thai, reply with exactly the word: ALREADY_THAI
+        const systemPrompt = `You are a highly accurate translator. Translate the user's message into natural Thai. 
+Translate all text, including interjections (e.g. "هاه" -> "หือ?"), laughter (e.g. "hahahaha" -> "55555"), internet slang, and dialects.
+If the text is ALREADY written in Thai script, reply with strictly the word: ALREADY_THAI
 Do not add any extra explanations.`;
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
