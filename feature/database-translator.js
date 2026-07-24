@@ -34,7 +34,7 @@ module.exports = async (message) => {
 If the user's text is in Arabic (including regional dialects, interjections like "هاه", laughter like "ههههه", or slang), translate it to English and prefix your response with "EN:".
 If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
 Always convert laughter and interjections to natural local equivalents.
-Only return the prefixed translation, nothing else.`;
+Only return the prefixed translation and ignore emoji messages, nothing else.`;
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
