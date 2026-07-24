@@ -30,7 +30,7 @@ async function runCleanup() {
     // ==========================================
     // 2. WIPE DATABASE COLLECTIONS (MongoDB)
     // ==========================================
-    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGO_TOKEN || process.env.MONGODB_URI;
     if (mongoUri) {
         try {
             console.log("🔌 [Database] Connecting to MongoDB...");
@@ -62,8 +62,9 @@ async function runCleanup() {
     // ==========================================
     // 3. WIPE OLD DISCORD SLASH COMMANDS
     // ==========================================
-    const token = process.env.BOT_TOKEN;
+    const token = process.env.TOKEN;
     const clientId = "1005683648441372692"; // Your bot's client/application ID
+    const guildId = "878565984108150824";
 
     if (token && clientId) {
         try {
@@ -76,8 +77,8 @@ async function runCleanup() {
 
             // Clear Guild (Server) Specific Slash Commands if you have a test server ID set
             if (process.env.GUILD_ID) {
-                await rest.put(Routes.applicationGuildCommands(clientId, process.env.GUILD_ID), { body: [] });
-                console.log(`🗑️ [Discord] Successfully cleared all GUILD slash commands for server: ${process.env.GUILD_ID}`);
+                await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] });
+                console.log(`🗑️ [Discord] Successfully cleared all GUILD slash commands for server: ${guildId}`);
             }
 
             console.log("✅ [Discord] Slash command cleanup complete.\n");
