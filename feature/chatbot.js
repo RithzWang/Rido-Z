@@ -67,7 +67,7 @@ Use discord text formatting.
 * list: - text or * text
 indent your list by adding 2 spaces before - or *
 * block quotes: > text
-* code blocks: `text`
+* code blocks: \`text\`
 to create a multi-line code block, you can do so by wrapping your text in \`\`\`
 example:
 \`\`\`text
