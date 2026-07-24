@@ -1,4 +1,4 @@
-const Translator = require('../models/TranslatorSchema.js');
+const Translator = require('../schema/TranslatorSchema.js');
 
 module.exports = async (message) => {
     if (message.author.bot || !message.content.trim()) return false;
