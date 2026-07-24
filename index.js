@@ -20,6 +20,8 @@ const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches
 
 // 👇 Import your new unified Database Translator
 const databaseTranslator = require('./feature/database-translator.js');
+const personaChatbot = require('./feature/chatbot.js'); // <-- ADD THIS
+
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -244,8 +246,9 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     // ==========================================
-    // RUN DYNAMIC DATABASE TRANSLATOR
+    // RUN DYNAMIC DATABASE TRANSLATOR & CHATBOT
     // ==========================================
+    if (await personaChatbot(message)) return;
     if (await databaseTranslator(message)) return;
 
     // ==========================================
