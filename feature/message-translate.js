@@ -27,7 +27,7 @@ module.exports = async (message) => {
                 const dataAr = await resAr.json();
                 finalTranslation = dataAr[0].map(item => item[0]).join('');
                 usedHeader = "-# **ترجمة:**";
-                warningText = "-#   - الترجمة الآلية ليست دقيقة 100%";
+                warningText = "-#   - الترجمة AI ليست دقيقة 100%";
             }
         } catch (googleError) {
             console.warn("⚠️ Google Translate failed, falling back to DeepL:", googleError.message);
