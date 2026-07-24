@@ -1,6 +1,6 @@
 module.exports = async (message) => {
     // 1. Only run in your specific chatbot channel
-    if (message.channel.id !== '880828576285458493') return false;
+    if (message.channel.id !== '896936994880512050') return false;
     
     // 2. Ignore other bots and empty messages
     if (message.author.bot || !message.content.trim()) return false;
