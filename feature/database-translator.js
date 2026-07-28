@@ -1,5 +1,4 @@
 const { MessageFlags } = require('discord.js');
-
 const Translator = require('../schema/TranslatorSchema.js');
 
 module.exports = async (message) => {
@@ -87,7 +86,7 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
         if (!setting) return false;
 
         systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
-Whether the user speaks in Arabic, English, Spanish, Thai, or any other language, you MUST return the translation in ${setting.name}.
+CRITICAL RULE: Whether the user speaks in English, Arabic, Spanish, Thai, or any other language, you MUST return the final translation in ${setting.name}. Never echo or leave English text untranslated if the target language is not English.
 Translate all text, including interjections (e.g., "هاه", "huh"), laughter (e.g., "hahahaha", "ههههه"), internet slang, and dialects into local native equivalents in ${setting.name}.
 Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" in Arabic means "I will sleep". Condense elongated words to their base meaning before translating.
 IMPORTANT: You MUST preserve all standard emojis and Discord custom emojis (which look like <:name:id> or <a:name:id>) exactly as they appear in the original message. Do not translate, remove, or modify them.
@@ -98,7 +97,7 @@ Otherwise, you MUST format your response exactly like this:
 SRC: [Source Language]
 [Translated Text]
 
-Replace [Source Language] with the name of the detected source language, written in ${setting.name} (e.g. if translating to Thai, write "ภาษาสเปน". If translating to English, write "SPANISH"). 
+Replace [Source Language] with the name of the detected source language, written in ${setting.name} (e.g. if translating English to Thai, write "ภาษาอังกฤษ". If translating to English, write "SPANISH"). 
 Do not add any extra explanations or conversational text.`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
