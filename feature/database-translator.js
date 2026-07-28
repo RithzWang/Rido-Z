@@ -24,9 +24,6 @@ module.exports = async (message) => {
 
         if (!channelLang) return false;
 
-        // 👇 DIAGNOSTIC LOG 1: Confirms the bot sees the message and knows the language
-        console.log(`✅ [Translator] Detected message in ${message.channel.name} -> Target: ${channelLang}`);
-
         const text = message.content.trim();
         let systemPrompt = "";
 
@@ -54,7 +51,6 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
 
             const data = await res.json();
             
-            // 👇 DIAGNOSTIC LOG 2: Checks if OpenAI crashed
             if (data.error) {
                 console.error("❌ [OpenAI Error (Bilingual)]:", data.error.message);
                 return false;
@@ -96,19 +92,20 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
         if (!setting) return false;
 
         systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
-CRITICAL RULE: Whether the user speaks in English, Arabic, Spanish, Thai, or any other language, you MUST return the final translation in ${setting.name}. Never echo or leave English text untranslated if the target language is not English.
-Translate all text, including interjections (e.g., "هاه", "huh"), laughter (e.g., "hahahaha", "ههههه"), internet slang, and dialects into local native equivalents in ${setting.name}.
-Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" in Arabic means "I will sleep". Condense elongated words to their base meaning before translating.
-IMPORTANT: You MUST preserve all standard emojis and Discord custom emojis (which look like <:name:id> or <a:name:id>) exactly as they appear in the original message. Do not translate, remove, or modify them.
+CRITICAL RULES:
+1. Whether the user speaks in English, Arabic, Spanish, or any other language, you MUST return the translation in ${setting.name}. 
+2. Even if the text is very short (like "What", "Please", "Hello"), you MUST translate it. Never leave English text untranslated.
+3. Understand chat slang and stretched words.
+4. Preserve all standard emojis and Discord custom emojis (e.g., <:name:id> or <a:name:id>) exactly as they appear.
 
-If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis (no translatable text), reply with strictly the word: ${setting.ignore}
+If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis (no translatable text), reply with exactly: ${setting.ignore}
+Do NOT reply with ${setting.ignore} if the text is in English.
 
 Otherwise, you MUST format your response exactly like this:
 SRC: [Source Language]
 [Translated Text]
 
-Replace [Source Language] with the name of the detected source language, written in ${setting.name} (e.g. if translating English to Thai, write "ภาษาอังกฤษ". If translating to English, write "SPANISH"). 
-Do not add any extra explanations or conversational text.`;
+Replace [Source Language] with the detected source language, written in ${setting.name} (e.g. if translating English to Thai, write "ภาษาอังกฤษ").`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -122,13 +119,15 @@ Do not add any extra explanations or conversational text.`;
 
         const data = await res.json();
 
-        // 👇 DIAGNOSTIC LOG 3: Checks if OpenAI crashed
         if (data.error) {
             console.error("❌ [OpenAI Error (General)]:", data.error.message);
             return false;
         }
 
         const result = data.choices?.[0]?.message?.content?.trim() || "";
+        
+        // 👇 NEW DIAGNOSTIC LOG: Let's see exactly what the AI says behind the scenes!
+        console.log(`🤖 [OpenAI Raw Output for "${text}"]:`, result);
 
         if (result && !result.includes(setting.ignore)) {
             let translatedText = result;
