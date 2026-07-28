@@ -36,8 +36,8 @@ If the user's text is in Arabic (including regional dialects, interjections like
 If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
 Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" means "I will sleep" ("بنام"), not "in the name". Condense elongated words to their base meaning before translating.
 Always convert laughter and interjections to natural local equivalents.
-IMPORTANT: You MUST preserve all standard emojis and Discord custom emojis (which look like <:name:id> or <a:name:id>) exactly as they appear in the original message. Do not translate, remove, or modify them.
-Only return the prefixed translation. If the message consists ONLY of emojis (no text to translate), reply with exactly: ALREADY_BILINGUAL`;
+IMPORTANT: You MUST preserve all standard emojis, Discord custom emojis (which look like <:name:id> or <a:name:id>), and user/role mentions (which look like @username, <@id>, or <@&id>) exactly as they appear in the original message. Do not translate, remove, or modify them. Place them naturally in the translated text.
+Only return the prefixed translation. If the message consists ONLY of emojis or mentions (no text to translate), reply with exactly: ALREADY_BILINGUAL`;
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -96,16 +96,17 @@ CRITICAL RULES:
 1. Whether the user speaks in English, Arabic, Spanish, or any other language, you MUST return the translation in ${setting.name}. 
 2. Even if the text is very short (like "What", "Please", "Hello"), you MUST translate it. Never leave English text untranslated.
 3. Understand chat slang and stretched words.
-4. Preserve all standard emojis and Discord custom emojis (e.g., <:name:id> or <a:name:id>) exactly as they appear.
+4. Preserve all standard emojis, Discord custom emojis (e.g., <:name:id> or <a:name:id>), and user/role mentions (e.g., @username, <@id>, <@&id>) exactly as they appear. Place them logically within the translated sentence.
 
-If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis (no translatable text), reply with exactly: ${setting.ignore}
-Do NOT reply with ${setting.ignore} if the text is in English.
+If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis/mentions (no translatable text), reply with exactly: ${setting.ignore}
 
-Otherwise, you MUST format your response exactly like this:
-SRC: [Source Language]
+Otherwise, you MUST format your response exactly like this example:
+SRC: [Source Language in ${setting.name}]
 [Translated Text]
 
-Replace [Source Language] with the detected source language, written in ${setting.name} (e.g. if translating English to Thai, write "ภาษาอังกฤษ").`;
+Example for translating "@Rithz Please" from English to Thai:
+SRC: ภาษาอังกฤษ
+@Rithz โปรด`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -125,18 +126,19 @@ Replace [Source Language] with the detected source language, written in ${settin
         }
 
         const result = data.choices?.[0]?.message?.content?.trim() || "";
-        
-        // 👇 NEW DIAGNOSTIC LOG: Let's see exactly what the AI says behind the scenes!
-        console.log(`🤖 [OpenAI Raw Output for "${text}"]:`, result);
 
         if (result && !result.includes(setting.ignore)) {
             let translatedText = result;
             let detectedLang = "UNKNOWN";
 
-            if (result.startsWith("SRC:")) {
-                const lines = result.split('\n');
-                detectedLang = lines.shift().substring(4).trim().toUpperCase();
+            const lines = result.split('\n');
+
+            if (lines.length >= 2) {
+                const firstLine = lines.shift(); 
+                detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim().toUpperCase();
                 translatedText = lines.join('\n').trim();
+            } else {
+                translatedText = result;
             }
 
             const finalHeader = setting.header.replace('{LANG}', detectedLang);
