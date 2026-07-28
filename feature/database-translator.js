@@ -5,24 +5,27 @@ module.exports = async (message) => {
     if (message.author.bot || !message.content.trim()) return false;
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) return false;
+    if (!OPENAI_API_KEY) {
+        console.log("⚠️ [Translator] Failed: OPENAI_API_KEY is missing in your .env or host settings!");
+        return false;
+    }
 
     try {
         let channelLang = null;
 
-        // 1. Check if this specific channel is the permanent hardcoded bilingual channel
         if (message.channel.id === '907979176236163133') {
             channelLang = 'bilingual';
         } else {
-            // 2. Otherwise, check MongoDB for dynamically configured channels
             const config = await Translator.findOne({ channelId: message.channel.id });
             if (config) {
                 channelLang = config.language;
             }
         }
 
-        // If it's not a registered or hardcoded translation channel, ignore it
         if (!channelLang) return false;
+
+        // 👇 DIAGNOSTIC LOG 1: Confirms the bot sees the message and knows the language
+        console.log(`✅ [Translator] Detected message in ${message.channel.name} -> Target: ${channelLang}`);
 
         const text = message.content.trim();
         let systemPrompt = "";
@@ -50,6 +53,13 @@ Only return the prefixed translation. If the message consists ONLY of emojis (no
             });
 
             const data = await res.json();
+            
+            // 👇 DIAGNOSTIC LOG 2: Checks if OpenAI crashed
+            if (data.error) {
+                console.error("❌ [OpenAI Error (Bilingual)]:", data.error.message);
+                return false;
+            }
+
             const result = data.choices?.[0]?.message?.content?.trim() || "";
 
             if (result === "ALREADY_BILINGUAL") {
@@ -111,6 +121,13 @@ Do not add any extra explanations or conversational text.`;
         });
 
         const data = await res.json();
+
+        // 👇 DIAGNOSTIC LOG 3: Checks if OpenAI crashed
+        if (data.error) {
+            console.error("❌ [OpenAI Error (General)]:", data.error.message);
+            return false;
+        }
+
         const result = data.choices?.[0]?.message?.content?.trim() || "";
 
         if (result && !result.includes(setting.ignore)) {
@@ -134,7 +151,7 @@ Do not add any extra explanations or conversational text.`;
         return true;
 
     } catch (error) {
-        console.error("Database Translator Error:", error);
+        console.error("❌ [Database Translator Crash Error]:", error);
         return false;
     }
 };
