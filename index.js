@@ -18,9 +18,10 @@ const Parser = require('rss-parser');
 const parser = new Parser();
 const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
 
-// 👇 Import your new unified Database Translator
+// 👇 Import your new unified Database Translator, Chatbot, and Presence Manager
 const databaseTranslator = require('./feature/database-translator.js');
-const personaChatbot = require('./feature/chatbot.js'); // <-- ADD THIS
+const personaChatbot = require('./feature/chatbot.js'); 
+const presenceManager = require('.utils/presenceManager.js'); // <-- Added Presence Manager
 
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
@@ -149,6 +150,9 @@ client.once('clientReady', async () => {
     // DYNAMIC STATUS CLOCK
     // ==========================================
     setInterval(() => {
+        // 👇 CHECK: Only run default clock if the presence manager is set to 'default'
+        if (presenceManager.getPresenceState().mode !== 'default') return;
+
         const now = moment().tz('Asia/Bangkok');
         const formattedTime = now.format('HH:mm');
         const currentHour = now.hour();
@@ -275,7 +279,19 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// --- 6. STARTUP SEQUENCE ---
+// --- 6. INTERACTION LISTENER FOR PRESENCE MANAGER ---
+client.on('interactionCreate', async (interaction) => {
+    // Pass String Select Menus and Modals to the presence manager
+    if (interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
+        try {
+            await presenceManager(interaction, client);
+        } catch (error) {
+            console.error("Presence Manager Error:", error);
+        }
+    }
+});
+
+// --- 7. STARTUP SEQUENCE ---
 (async () => {
     try {
         if (process.env.MONGO_TOKEN) {
