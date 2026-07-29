@@ -21,7 +21,7 @@ const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
 const personaChatbot = require('./feature/chatbot.js'); 
-const statusManager = require('./feature/utils/statusManager.js'); // <-- Updated to Status Manager
+const statusManager = require('./utils/statusManager.js'); // <-- Updated to Status Manager
 
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
