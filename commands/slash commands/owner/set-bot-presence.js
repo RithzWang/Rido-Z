@@ -6,7 +6,8 @@ const {
     SeparatorSpacingSize, 
     StringSelectMenuBuilder, 
     StringSelectMenuOptionBuilder, 
-    ActionRowBuilder 
+    ActionRowBuilder,
+    MessageFlags
 } = require('discord.js');
 
 // Import your state manager to read the current status
@@ -18,13 +19,22 @@ module.exports = {
         .setDescription('Configure the bots status and activity'),
     
     async execute(interaction, client) {
+        // ==========================================
+        // 🔒 OWNER ONLY CHECK
+        // ==========================================
+        if (interaction.user.id !== '837741275603009626') {
+            return interaction.reply({ 
+                content: '⛔ You do not have permission to use this command.', 
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const currentState = presenceManager.getPresenceState();
         
         // Dynamically build the "Edit" label based on current state
         let editLabel = "Edit ....";
         if (currentState.mode !== 'default' && currentState.cycles.length > 0) {
-            // Combine the current cycle text to show in the menu (e.g., "Edit: 2s to Hello, 5s to Hiiii")
-            // Note: Discord caps Select Menu labels at 100 characters!
+            // Combine the current cycle text to show in the menu
             const summary = currentState.cycles.map(c => {
                 if (currentState.mode === 'cycling_status' || currentState.mode === 'cycling_presence') {
                     return `${c.duration / 1000}s to ${c.text || c.status}`;
@@ -35,7 +45,7 @@ module.exports = {
                 }
             }).join(', ');
             
-            editLabel = `Edit: ${summary}`.substring(0, 100); 
+            editLabel = `Edit: ${summary}`.substring(0, 100); // Discord caps Select Menu labels at 100 characters
         }
 
         const components = [
@@ -85,7 +95,7 @@ module.exports = {
                                         .setDescription("Change bot Online/Idle/DND status every n seconds")
                                         .setEmoji({ name: "⚙️" }),
                                     new StringSelectMenuOptionBuilder()
-                                        .setLabel(editLabel) // <--- APPLIED DYNAMIC LABEL HERE
+                                        .setLabel(editLabel) 
                                         .setValue("a72fcb8a646a41ffbb8fdc0fcfbafdf7")
                                         .setEmoji({ name: "✏️" }),
                                     new StringSelectMenuOptionBuilder()
@@ -99,7 +109,7 @@ module.exports = {
 
         await interaction.reply({
             components: components,
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };
