@@ -163,7 +163,8 @@ client.once('clientReady', async () => {
                 name: 'customstatus', 
                 type: ActivityType.Custom, 
                 emoji: '🐦‍🔥',
-                state: `${timeEmoji} ${formattedTime} (GMT+7)` 
+                state: `I Love Aboudi 🫂`
+                // state: `${timeEmoji} ${formattedTime} (GMT+7)` 
             }],
             status: 'dnd'
         });
