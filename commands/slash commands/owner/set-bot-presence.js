@@ -10,7 +10,7 @@ const {
 } = require('discord.js');
 
 // Import your state manager to read the current status
-const presenceManager = require('../feature/utils/presenceManager.js'); 
+const presenceManager = require('../../../utils/presenceManager.js'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
