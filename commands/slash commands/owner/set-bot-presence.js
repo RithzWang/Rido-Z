@@ -5,9 +5,12 @@ const {
     SeparatorBuilder, 
     SeparatorSpacingSize, 
     StringSelectMenuBuilder, 
-    StringSelectMenuOptionBuilder, // Note: standard v14 uses StringSelectMenuOptionBuilder
+    StringSelectMenuOptionBuilder, 
     ActionRowBuilder 
 } = require('discord.js');
+
+// Import your state manager to read the current status
+const presenceManager = require('../feature/utils/presenceManager.js'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,7 +18,26 @@ module.exports = {
         .setDescription('Configure the bots status and activity'),
     
     async execute(interaction, client) {
-        // Build the components exact to your specifications
+        const currentState = presenceManager.getPresenceState();
+        
+        // Dynamically build the "Edit" label based on current state
+        let editLabel = "Edit ....";
+        if (currentState.mode !== 'default' && currentState.cycles.length > 0) {
+            // Combine the current cycle text to show in the menu (e.g., "Edit: 2s to Hello, 5s to Hiiii")
+            // Note: Discord caps Select Menu labels at 100 characters!
+            const summary = currentState.cycles.map(c => {
+                if (currentState.mode === 'cycling_status' || currentState.mode === 'cycling_presence') {
+                    return `${c.duration / 1000}s to ${c.text || c.status}`;
+                } else if (currentState.mode === 'cycling_activity') {
+                    // Extract activity name for summary
+                    const types = { 0: 'Playing', 1: 'Streaming', 2: 'Listening to', 3: 'Watching', 5: 'Competing in' };
+                    return `${c.duration / 1000}s ${types[c.activityType]} ${c.text}`;
+                }
+            }).join(', ');
+            
+            editLabel = `Edit: ${summary}`.substring(0, 100); 
+        }
+
         const components = [
             new ContainerBuilder()
                 .addTextDisplayComponents(
@@ -63,7 +85,7 @@ module.exports = {
                                         .setDescription("Change bot Online/Idle/DND status every n seconds")
                                         .setEmoji({ name: "⚙️" }),
                                     new StringSelectMenuOptionBuilder()
-                                        .setLabel("Edit ….")
+                                        .setLabel(editLabel) // <--- APPLIED DYNAMIC LABEL HERE
                                         .setValue("a72fcb8a646a41ffbb8fdc0fcfbafdf7")
                                         .setEmoji({ name: "✏️" }),
                                     new StringSelectMenuOptionBuilder()
