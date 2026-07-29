@@ -1,4 +1,4 @@
-const { MessageFlags } = require('discord.js');
+const { MessageFlags } = require('discord.js'); // Fixed 'Const' to 'const'
 
 module.exports = {
     name: 'interactionCreate', // The exact name of the Discord event
@@ -18,7 +18,8 @@ module.exports = {
 
         // 3. Try to execute the command!
         try {
-            await command.execute(interaction);
+            // 👇 FIXED: Added 'client' so your commands can use it!
+            await command.execute(interaction, client); 
         } catch (error) {
             console.error(`Error executing ${interaction.commandName}:`, error);
             
