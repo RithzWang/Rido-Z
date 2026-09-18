@@ -93,7 +93,7 @@ module.exports = {
             // 1. Check if it's already added in MongoDB
             const exists = await YouTubeDB.findOne({ ytChannelId: ytId, discordChannelId: targetChannel.id });
             if (exists) {
-                return interaction.editReply(`<:warn:1528710101324529775> THIS YOUTUBE CHANNEL IS ALREADY BEING TRACKED IN <#${targetChannel.id}>.`);
+                return interaction.editReply(`<:warn:1528710101324529775> THIS YOUTUBE CHANNEL IS ALREADY BEING TRACKED IN <#${targetChannel.id}>`);
             }
 
             // 2. Check Bot Permissions in the target channel
