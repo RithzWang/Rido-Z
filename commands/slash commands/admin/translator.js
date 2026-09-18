@@ -62,12 +62,12 @@ module.exports = {
                 );
 
                 await interaction.reply({
-                    content: `✅ Successfully configured <#${channel.id}> as a **${language.toUpperCase()}** translation channel!`,
+                    content: `<:yes:1528709597647470615> SUCCESSFULLY SET <#${channel.id}> AS A **${language.toUpperCase()}** TRANSLATION CHANNEL`,
                     ephemeral: true
                 });
             } catch (error) {
                 console.error("Database Error:", error);
-                await interaction.reply({ content: '❌ Failed to save to database.', ephemeral: true });
+                await interaction.reply({ content: '<:no:1528709599740559415> FAILED TO SAVE TO DATABASE', ephemeral: true });
             }
         } 
         
@@ -76,7 +76,7 @@ module.exports = {
                 const channels = await Translator.find({ guildId });
 
                 if (channels.length === 0) {
-                    return interaction.reply({ content: 'ℹ️ No translation channels have been set up yet. Use `/translator set` to add one.', ephemeral: true });
+                    return interaction.reply({ content: 'ℹ️ NO TRANSLATION CHANNELS HAVE BEEN SET UP YET \nUSE `/translator set` TO ADD ONE', ephemeral: true });
                 }
 
                 const description = channels.map(c => `• <#${c.channelId}> ➔ **${c.language.toUpperCase()}**`).join('\n');
@@ -89,7 +89,7 @@ module.exports = {
                 await interaction.reply({ embeds: [embed], ephemeral: true });
             } catch (error) {
                 console.error("Database Error:", error);
-                await interaction.reply({ content: '❌ Failed to fetch channels.', ephemeral: true });
+                await interaction.reply({ content: '<:no:1528709599740559415> FAILED TO FETCH CHANNELS', ephemeral: true });
             }
         } 
         
@@ -100,16 +100,16 @@ module.exports = {
                 const deleted = await Translator.findOneAndDelete({ channelId: channel.id });
 
                 if (!deleted) {
-                    return interaction.reply({ content: `❌ <#${channel.id}> was not registered as a translation channel.`, ephemeral: true });
+                    return interaction.reply({ content: `<:no:1528709599740559415> <#${channel.id}> WAS NOT SET AS A TRANSLATION CHANNEL`, ephemeral: true });
                 }
 
                 await interaction.reply({
-                    content: `🗑️ Successfully removed <#${channel.id}> from the translation database.`,
+                    content: `<:yes:1528709597647470615> SUCCESSFULLY REMOVED <#${channel.id}> FROM THE TRANSLATION DATABASE`,
                     ephemeral: true
                 });
             } catch (error) {
                 console.error("Database Error:", error);
-                await interaction.reply({ content: '❌ Failed to remove channel.', ephemeral: true });
+                await interaction.reply({ content: '<:no:1528709599740559415> FAILED TO REMOVE CHANNEL', ephemeral: true });
             }
         }
     }
