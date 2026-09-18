@@ -34,12 +34,14 @@ module.exports = async (message) => {
         // ==========================================
         if (channelLang === 'bilingual') {
             systemPrompt = `You are an expert, natural-sounding translator. 
-If the user's text is in Arabic (including regional dialects, interjections like "هاه", laughter like "ههههه", or slang), translate it to English and prefix your response with "EN:".
-If the user's text is in English (including laughter like "hahahaha"), translate it to Arabic and prefix your response with "AR:".
-Crucially: Understand chat slang and stretched words with repeated letters. For example, recognize that "بنامممم" means "I will sleep" ("بنام"), not "in the name". Condense elongated words to their base meaning before translating.
-Always convert laughter and interjections to natural local equivalents.
-IMPORTANT: You MUST preserve all standard emojis, Discord custom emojis (which look like <:name:id> or <a:name:id>), and user/role mentions (which look like @username, <@id>, or <@&id>) exactly as they appear in the original message. Do not translate, remove, or modify them. Place them naturally in the translated text.
-Only return the prefixed translation. If the message consists ONLY of emojis or mentions (no text to translate), reply with exactly: ALREADY_BILINGUAL`;
+If the user's text is in Arabic (including dialects, interjections, laughter like "ههههه", or slang), translate to English and prefix your response with "EN:".
+If the user's text is in English (including chat slang, diminutives, or laughter), translate to Arabic and prefix your response with "AR:".
+
+CRITICAL RULES:
+1. Understand chat slang, single-word messages, and stretched words (e.g., recognize that "بنامممم" means "I will sleep", not "in the name"). Condense elongated words to their base meaning before translating.
+2. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context, list the most likely translations as a numbered list after your prefix (e.g., EN: 1. [Meaning 1] \n 2. [Meaning 2]).
+3. Preserve all standard emojis, Discord custom emojis (<:name:id>), and mentions (@username, <@id>) exactly as they appear. Place them naturally in the translated text.
+4. Only return the prefixed translation. If the message consists ONLY of emojis or mentions (no translatable text), reply with exactly: ALREADY_BILINGUAL`;
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -53,7 +55,7 @@ Only return the prefixed translation. If the message consists ONLY of emojis or 
                         { role: "system", content: systemPrompt }, 
                         { role: "user", content: text }
                     ],
-                    temperature: 0.3
+                    temperature: 0.2 // Lowered for strict rule adherence
                 })
             });
 
@@ -99,7 +101,7 @@ Only return the prefixed translation. If the message consists ONLY of emojis or 
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-                        systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives (like Spanish words ending in -ita/-ito, e.g., "holita", "casita", "cosita") even without full sentence context.
+        systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives (like Spanish words ending in -ita/-ito, e.g., "holita", "casita", or similar concepts in other languages) even without full sentence context.
 
 CRITICAL RULES:
 1. If the text is ALREADY mostly in ${setting.name} (including slang, diminutives, typos, or short single-word messages), do NOT translate or correct it. Reply with exactly and ONLY: ${setting.ignore}
@@ -117,8 +119,6 @@ SRC: Spanish
 1. I eat an apple
 2. Like an apple`;
 
-
-
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 
@@ -131,8 +131,7 @@ SRC: Spanish
                     { role: "system", content: systemPrompt }, 
                     { role: "user", content: text }
                 ],
-                // Lowered temperature forces stricter adherence to the formatting and negative constraints
-                temperature: 0.2 
+                temperature: 0.2 // Lowered for strict rule adherence
             })
         });
 
@@ -162,7 +161,6 @@ SRC: Spanish
             // ==========================================
             // FAILSAFE: Programmatically block same-language translations
             // ==========================================
-            // If the AI states the source is the exact same language as the channel target, skip sending it.
             if (detectedLang.toLowerCase() === setting.name.toLowerCase()) {
                 return false; 
             }
