@@ -33,7 +33,7 @@ module.exports = async (message) => {
         // BILINGUAL (Arabic <-> English) LOGIC
         // ==========================================
         if (channelLang === 'bilingual') {
-                                    systemPrompt = `You are a highly intelligent, natural Discord translator.
+            systemPrompt = `You are a highly intelligent, natural Discord translator.
 Translate Arabic text to English (prefix with "EN:").
 Translate English text to Arabic (prefix with "AR:").
 
@@ -42,7 +42,6 @@ BEHAVIOR:
 2. Context is King: If a phrase is completely ambiguous, give a numbered list of the top meanings. BUT if there is context, output ONLY the single correct translation.
 3. Untouched Elements: Emojis (<:name:id>) and mentions (<@id>) must remain exactly where they belong.
 4. Skip Rule: If the message contains no translatable text, reply ONLY with: SKIP`;
-
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -56,7 +55,7 @@ BEHAVIOR:
                         { role: "system", content: systemPrompt }, 
                         { role: "user", content: text }
                     ],
-                    temperature: 0.2 // Lowered for strict rule adherence
+                    temperature: 0.2
                 })
             });
 
@@ -69,7 +68,8 @@ BEHAVIOR:
 
             const result = data.choices?.[0]?.message?.content?.trim() || "";
 
-            if (result === "ALREADY_BILINGUAL") {
+            // Updated to catch the "SKIP" keyword instead of "ALREADY_BILINGUAL"
+            if (result === "SKIP") {
                 return false; 
             } else if (result.startsWith("EN:")) {
                 const finalTranslation = result.substring(3).trim();
@@ -93,16 +93,16 @@ BEHAVIOR:
         // GENERAL CHANNELS (English, Spanish, Thai, Arabic)
         // ==========================================
         const langMap = {
-            english: { name: 'English', header: '-# **TRANSLATED FROM __{LANG}__:**', warning: '-# - AI translation is not 100% accurate', ignore: 'ALREADY_ENGLISH' },
-            spanish: { name: 'Spanish', header: '-# **TRADUCIDO DEL __{LANG}__:**', warning: '-# - La traducción por IA no es 100% precisa', ignore: 'ALREADY_SPANISH' },
-            arabic: { name: 'Arabic', header: '-# **مترجم من __{LANG}__:**', warning: '-# - الترجمة AI ليست دقيقة 100%', ignore: 'ALREADY_ARABIC' },
-            thai: { name: 'Thai', header: '-# **แปลจาก__{LANG}__:**', warning: '-# - คำแปลโดย AI ไม่ได้แม่นยำ 100%', ignore: 'ALREADY_THAI' }
+            english: { name: 'English', header: '-# **TRANSLATED FROM __{LANG}__:**', warning: '-# - AI translation is not 100% accurate' },
+            spanish: { name: 'Spanish', header: '-# **TRADUCIDO DEL __{LANG}__:**', warning: '-# - La traducción por IA no es 100% precisa' },
+            arabic: { name: 'Arabic', header: '-# **مترجم من __{LANG}__:**', warning: '-# - الترجمة AI ليست دقيقة 100%' },
+            thai: { name: 'Thai', header: '-# **แปลจาก__{LANG}__:**', warning: '-# - คำแปลโดย AI ไม่ได้แม่นยำ 100%' }
         };
 
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-                        systemPrompt = `You are a highly intelligent, natural Discord translator. Your target language is ${setting.name}.
+        systemPrompt = `You are a highly intelligent, natural Discord translator. Your target language is ${setting.name}.
 
 BEHAVIOR:
 1. Translate Short Words: If the text is a single foreign word, slang, or diminutive (e.g., Spanish "cosita", "holita", "casita"), you MUST translate its meaning into ${setting.name}. Do not ignore it just because it lacks context.
@@ -114,8 +114,6 @@ FORMAT:
 If translating, output exactly:
 SRC: [Source Language]
 [Translation]`;
-
-
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -129,7 +127,7 @@ SRC: [Source Language]
                     { role: "system", content: systemPrompt }, 
                     { role: "user", content: text }
                 ],
-                temperature: 0.2 // Lowered for strict rule adherence
+                temperature: 0.2 
             })
         });
 
@@ -142,7 +140,10 @@ SRC: [Source Language]
 
         const result = data.choices?.[0]?.message?.content?.trim() || "";
 
-        if (result && !result.includes(setting.ignore)) {
+        // 1. If it replied with ONLY "SKIP", silently abort.
+        if (result === "SKIP") return false;
+
+        if (result) {
             let translatedText = result;
             let detectedLang = "UNKNOWN";
 
@@ -156,12 +157,11 @@ SRC: [Source Language]
                 translatedText = result;
             }
 
-            // ==========================================
-            // FAILSAFE: Programmatically block same-language translations
-            // ==========================================
-            if (detectedLang.toLowerCase() === setting.name.toLowerCase()) {
-                return false; 
-            }
+            // 2. If it replied with "SRC: [Lang]" and then "SKIP", silently abort.
+            if (translatedText === "SKIP") return false;
+
+            // 3. If it detected the source is the exact same language as the channel target, abort.
+            if (detectedLang.toLowerCase() === setting.name.toLowerCase()) return false; 
 
             const finalHeader = setting.header.replace('{LANG}', detectedLang);
 
