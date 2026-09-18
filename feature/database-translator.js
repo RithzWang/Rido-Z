@@ -2,6 +2,7 @@ const { MessageFlags } = require('discord.js');
 const Translator = require('../schema/TranslatorSchema.js');
 
 module.exports = async (message) => {
+    // Ignore bots and empty messages
     if (message.author.bot || !message.content.trim()) return false;
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -13,6 +14,7 @@ module.exports = async (message) => {
     try {
         let channelLang = null;
 
+        // Check if it's the specific Bilingual channel, otherwise fetch from Database
         if (message.channel.id === '907979176236163133') {
             channelLang = 'bilingual';
         } else {
@@ -41,10 +43,16 @@ Only return the prefixed translation. If the message consists ONLY of emojis or 
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`, 
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({
                     model: "gpt-4o-mini",
-                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: text }],
+                    messages: [
+                        { role: "system", content: systemPrompt }, 
+                        { role: "user", content: text }
+                    ],
                     temperature: 0.3
                 })
             });
@@ -93,15 +101,13 @@ Only return the prefixed translation. If the message consists ONLY of emojis or 
 
         systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}.
 CRITICAL RULES:
-1. Whether the user speaks in English, Arabic, Spanish, or any other language, you MUST return the translation in ${setting.name}. 
-2. Even if the text is very short (like "What", "Please", "Hello"), you MUST translate it. Never leave English text untranslated.
-3. Understand chat slang and stretched words.
-4. Preserve all standard emojis, Discord custom emojis (e.g., <:name:id> or <a:name:id>), and user/role mentions (e.g., @username, <@id>, <@&id>) exactly as they appear. Place them logically within the translated sentence.
+1. If the text is ALREADY mostly in ${setting.name} (including slang, typos, or chat-speak), do NOT translate or correct it. Reply with exactly and ONLY: ${setting.ignore}
+2. Do not act as a grammar checker. Never "fix" ${setting.name} text into better ${setting.name}.
+3. If the message consists ONLY of emojis/mentions (no translatable text), reply with exactly: ${setting.ignore}
+4. Preserve all standard emojis, Discord custom emojis (e.g., <:name:id> or <a:name:id>), and user/role mentions exactly as they appear.
 
-If the text is ALREADY written entirely natively in ${setting.name}, OR if the message consists ONLY of emojis/mentions (no translatable text), reply with exactly: ${setting.ignore}
-
-Otherwise, you MUST format your response exactly like this example:
-SRC: [Source Language in ${setting.name}]
+If a translation IS needed, you MUST format your response exactly like this:
+SRC: [Name of the Source Language written in ${setting.name}]
 [Translated Text]
 
 Example for translating "@Rithz Please" from English to Thai:
@@ -110,11 +116,18 @@ SRC: ภาษาอังกฤษ
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+            headers: { 
+                'Authorization': `Bearer ${OPENAI_API_KEY}`, 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: text }],
-                temperature: 0.3
+                messages: [
+                    { role: "system", content: systemPrompt }, 
+                    { role: "user", content: text }
+                ],
+                // Lowered temperature forces stricter adherence to the formatting and negative constraints
+                temperature: 0.2 
             })
         });
 
@@ -139,6 +152,14 @@ SRC: ภาษาอังกฤษ
                 translatedText = lines.join('\n').trim();
             } else {
                 translatedText = result;
+            }
+
+            // ==========================================
+            // FAILSAFE: Programmatically block same-language translations
+            // ==========================================
+            // If the AI states the source is the exact same language as the channel target, skip sending it.
+            if (detectedLang.toLowerCase() === setting.name.toLowerCase()) {
+                return false; 
             }
 
             const finalHeader = setting.header.replace('{LANG}', detectedLang);
