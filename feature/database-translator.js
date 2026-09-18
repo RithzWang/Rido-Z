@@ -99,21 +99,24 @@ Only return the prefixed translation. If the message consists ONLY of emojis or 
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-                systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives (like Spanish words ending in -ita/-ito, e.g., "holita", "casita", "cosita") even without full sentence context.
+                        systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives (like Spanish words ending in -ita/-ito, e.g., "holita", "casita", "cosita") even without full sentence context.
 
 CRITICAL RULES:
 1. If the text is ALREADY mostly in ${setting.name} (including slang, diminutives, typos, or short single-word messages), do NOT translate or correct it. Reply with exactly and ONLY: ${setting.ignore}
 2. Do not act as a grammar checker. Never "fix" ${setting.name} text into better ${setting.name}.
 3. If the message consists ONLY of emojis/mentions (no translatable text), reply with exactly: ${setting.ignore}
-4. Preserve all standard emojis, Discord custom emojis (e.g., <:name:id> or <a:name:id>), and user/role mentions exactly as they appear.
+4. Preserve all standard emojis, Discord custom emojis, and user/role mentions exactly as they appear.
+5. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context (e.g., Spanish "como manzana" meaning "I eat an apple" vs "like an apple"), list the most likely translations as a numbered list.
 
 If a translation IS needed, you MUST format your response exactly like this:
 SRC: [Name of the Source Language written in ${setting.name}]
-[Translated Text]
+[Translated Text or Numbered List of Meanings]
 
-Example for translating "@Rithz Please" from English to Thai:
-SRC: ภาษาอังกฤษ
-@Rithz โปรด`;
+Example for translating an ambiguous phrase like "como manzana" from Spanish to English:
+SRC: Spanish
+1. I eat an apple
+2. Like an apple`;
+
 
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
