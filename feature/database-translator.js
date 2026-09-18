@@ -68,7 +68,6 @@ BEHAVIOR:
 
             const result = data.choices?.[0]?.message?.content?.trim() || "";
 
-            // Updated to catch the "SKIP" keyword instead of "ALREADY_BILINGUAL"
             if (result === "SKIP") {
                 return false; 
             } else if (result.startsWith("EN:")) {
@@ -112,7 +111,7 @@ BEHAVIOR:
 
 FORMAT:
 If translating, output exactly:
-SRC: [Source Language]
+SRC: [Name of the source language written natively in ${setting.name}]
 [Translation]`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -151,7 +150,8 @@ SRC: [Source Language]
 
             if (lines.length >= 2) {
                 const firstLine = lines.shift(); 
-                detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim().toUpperCase();
+                // Removed .toUpperCase() so it doesn't shout or break non-Latin text
+                detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim();
                 translatedText = lines.join('\n').trim();
             } else {
                 translatedText = result;
