@@ -101,7 +101,7 @@ BEHAVIOR:
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-                systemPrompt = `You are a highly intelligent, natural Discord translator. Your target language is ${setting.name}.
+        systemPrompt = `You are a highly intelligent, natural Discord translator. Your target language is ${setting.name}.
 
 BEHAVIOR:
 1. Translate Short Words: If the text is a single foreign word, slang, or diminutive (e.g., Spanish "cosita", "holita", "casita"), you MUST translate its meaning into ${setting.name}. Do not ignore it just because it lacks context.
@@ -114,7 +114,6 @@ FORMAT:
 If translating, output exactly:
 SRC: [Source language name translated into ${setting.name}]
 [Translation]`;
-
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -152,8 +151,8 @@ SRC: [Source language name translated into ${setting.name}]
 
             if (lines.length >= 2) {
                 const firstLine = lines.shift(); 
-                // Removed .toUpperCase() so it doesn't shout or break non-Latin text
-                detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim();
+                // Added .toUpperCase() back so English and Spanish channel labels are capitalized
+                detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim().toUpperCase();
                 translatedText = lines.join('\n').trim();
             } else {
                 translatedText = result;
