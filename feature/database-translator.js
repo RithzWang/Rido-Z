@@ -33,15 +33,16 @@ module.exports = async (message) => {
         // BILINGUAL (Arabic <-> English) LOGIC
         // ==========================================
         if (channelLang === 'bilingual') {
-            systemPrompt = `You are an expert, natural-sounding translator. 
+                        systemPrompt = `You are an expert, natural-sounding translator. 
 If the user's text is in Arabic (including dialects, interjections, laughter like "ههههه", or slang), translate to English and prefix your response with "EN:".
 If the user's text is in English (including chat slang, diminutives, or laughter), translate to Arabic and prefix your response with "AR:".
 
 CRITICAL RULES:
-1. Understand chat slang, single-word messages, and stretched words (e.g., recognize that "بنامممم" means "I will sleep", not "in the name"). Condense elongated words to their base meaning before translating.
-2. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context, list the most likely translations as a numbered list after your prefix (e.g., EN: 1. [Meaning 1] \n 2. [Meaning 2]).
-3. Preserve all standard emojis, Discord custom emojis (<:name:id>), and mentions (@username, <@id>) exactly as they appear. Place them naturally in the translated text.
+1. Understand chat slang, single-word messages, and stretched words.
+2. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context (e.g. "nada" in Spanish meaning "nothing" vs "swims"), list the most likely translations as a numbered list after your prefix. HOWEVER, if the context makes the meaning clear, provide ONLY the single correct translation.
+3. Preserve all standard emojis, Discord custom emojis, and mentions exactly as they appear.
 4. Only return the prefixed translation. If the message consists ONLY of emojis or mentions (no translatable text), reply with exactly: ALREADY_BILINGUAL`;
+
 
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -101,23 +102,24 @@ CRITICAL RULES:
         const setting = langMap[channelLang];
         if (!setting) return false;
 
-        systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives (like Spanish words ending in -ita/-ito, e.g., "holita", "casita", or similar concepts in other languages) even without full sentence context.
+                systemPrompt = `You are a highly accurate translator. Your strict goal is to translate text from ANY source language into natural ${setting.name}. You are an expert at understanding slang, internet chat-speak, and diminutives even without full sentence context.
 
 CRITICAL RULES:
 1. If the text is ALREADY mostly in ${setting.name} (including slang, diminutives, typos, or short single-word messages), do NOT translate or correct it. Reply with exactly and ONLY: ${setting.ignore}
 2. Do not act as a grammar checker. Never "fix" ${setting.name} text into better ${setting.name}.
-3. If the message consists ONLY of emojis/mentions (no translatable text), reply with exactly: ${setting.ignore}
+3. If the message consists ONLY of emojis/mentions, reply with exactly: ${setting.ignore}
 4. Preserve all standard emojis, Discord custom emojis, and user/role mentions exactly as they appear.
-5. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context (e.g., Spanish "como manzana" meaning "I eat an apple" vs "like an apple"), list the most likely translations as a numbered list.
+5. If a short phrase is highly ambiguous and has multiple distinct meanings due to lack of context (e.g., the Spanish word "nada" meaning "nothing" vs "he/she swims"), list the most likely translations as a numbered list. HOWEVER, if the context makes the meaning clear, provide ONLY the single correct translation.
 
 If a translation IS needed, you MUST format your response exactly like this:
 SRC: [Name of the Source Language written in ${setting.name}]
 [Translated Text or Numbered List of Meanings]
 
-Example for translating an ambiguous phrase like "como manzana" from Spanish to English:
+Example for translating an ambiguous phrase like "nada" from Spanish to English:
 SRC: Spanish
-1. I eat an apple
-2. Like an apple`;
+1. Nothing
+2. He/she swims`;
+
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
