@@ -29,6 +29,16 @@ module.exports = {
                     option.setName('attachment')
                         .setDescription('An optional image or file to attach.')
                         .setRequired(false))
+                .addIntegerOption(option =>
+                    option.setName('hide_after')
+                        .setDescription('Hide post after inactivity (Default: 1 Week)')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: '1 Hour', value: 60 },
+                            { name: '24 Hours', value: 1440 },
+                            { name: '3 Days', value: 4320 },
+                            { name: '1 Week', value: 10080 }
+                        ))
         )
         
         // --- EDIT SUBCOMMAND ---
@@ -58,7 +68,7 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        // Admin Permission Check (matching your reference code)
+        // Admin Permission Check
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.editReply({ 
                 content: '<:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
@@ -73,6 +83,9 @@ module.exports = {
                 const title = interaction.options.getString('title');
                 const messageText = interaction.options.getString('message');
                 const attachment = interaction.options.getAttachment('attachment');
+                
+                // Fetch the selected duration or default to 10080 minutes (1 week)
+                const hideAfter = interaction.options.getInteger('hide_after') || 10080;
 
                 const messagePayload = { content: messageText };
                 if (attachment) {
@@ -82,6 +95,7 @@ module.exports = {
                 const thread = await forumChannel.threads.create({
                     name: title,
                     message: messagePayload,
+                    autoArchiveDuration: hideAfter, // Applies the hiding behavior
                     reason: `Forum post created via command by ${interaction.user.tag}`
                 });
 
