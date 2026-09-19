@@ -46,7 +46,8 @@ const client = new Client({
     // 👇 This forces the bot to show the mobile icon status
     ws: { 
         properties: { 
-            browser: 'Discord VR' 
+            browser: 'Discord VR',
+            device: 'Discord VR'
         } 
     }
 });
