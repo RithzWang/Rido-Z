@@ -13,16 +13,13 @@ const {
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
-// 👇 Import RSS Parser and your YouTube Schema for the background checker
-const Parser = require('rss-parser');
-const parser = new Parser();
-const YouTubeDB = require('./schema/youtubeSchema'); // Ensure this path matches your folder structure!
+// 👇 Import your YouTube Schema for the background checker
+const YouTubeDB = require('./schema/youtubeSchema'); 
 
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
 const personaChatbot = require('./feature/chatbot.js'); 
-const statusManager = require('./utils/statusManager.js'); // <-- Updated to Status Manager
-
+const statusManager = require('./utils/statusManager.js'); 
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -54,7 +51,6 @@ client.messageCommands = new Collection();
 client.slashCommands = new Collection(); 
 
 // --- 1. LOAD SLASH COMMAND HANDLER ---
-// Make sure your commandHandler file correctly sets client.slashCommands
 require('./handlers/commandHandler.js')(client);
 
 // --- 2. LOAD LEGACY MESSAGE COMMANDS ---
@@ -95,14 +91,13 @@ client.once('clientReady', async () => {
     console.log(`✅ Logged in successfully as ${client.user.tag}`);
 
     // ==========================================
-    // AUTO-DEPLOY SLASH COMMANDS (FIXED FOR GLOBAL & GUILD)
+    // AUTO-DEPLOY SLASH COMMANDS
     // ==========================================
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     
     const guildCommandsData = [];
     const globalCommandsData = [];
     
-    // Sort commands into their proper deployment targets
     client.slashCommands.forEach(command => {
         if (command.data) {
             if (command.guildOnly) {
@@ -114,7 +109,6 @@ client.once('clientReady', async () => {
     });
 
     try {
-        // 1. Deploy Global Commands (No guildOnly rule set)
         if (globalCommandsData.length > 0) {
             console.log(`🔄 Refreshing ${globalCommandsData.length} Global (/) commands...`);
             await rest.put(
@@ -124,7 +118,6 @@ client.once('clientReady', async () => {
             console.log(`✅ Global commands registered.`);
         }
 
-        // 2. Deploy Guild Commands (Has guildOnly: true)
         if (config.guildId) {
             if (guildCommandsData.length > 0) {
                 console.log(`🔄 Refreshing ${guildCommandsData.length} Guild-only (/) commands...`);
@@ -134,7 +127,6 @@ client.once('clientReady', async () => {
                 );
                 console.log(`✅ Guild-only commands registered to server: ${config.guildId}`);
             } else {
-                // If there are no guild commands, push an empty array to clear the guild's cache
                 await rest.put(
                     Routes.applicationGuildCommands(client.user.id, config.guildId),
                     { body: [] }
@@ -150,7 +142,6 @@ client.once('clientReady', async () => {
     // DYNAMIC STATUS CLOCK
     // ==========================================
     setInterval(() => {
-        // 👇 CHECK: Only run default clock if the status manager is set to 'default'
         if (statusManager.getState().mode !== 'default') return;
 
         const now = moment().tz('Asia/Bangkok');
@@ -171,7 +162,7 @@ client.once('clientReady', async () => {
             }],
             status: 'dnd'
         });
-    }, 15000); // Updates every 15 seconds to avoid Discord rate limits
+    }, 15000); 
 
     // ==========================================
     // DYNAMIC CHANNEL CLOCK
@@ -182,11 +173,9 @@ client.once('clientReady', async () => {
             const timeChannel = client.channels.cache.get(targetChannelId);
 
             if (timeChannel) {
-                // Get current GMT+7 time using moment-timezone
                 const now = moment().tz('Asia/Bangkok');
                 const timeString = `🕒 ${now.format('HH:mm')} (GMT+7)`;
 
-                // Only update if the name is actually different (saves API calls)
                 if (timeChannel.name !== timeString) {
                     await timeChannel.setName(timeString);
                 }
@@ -194,38 +183,53 @@ client.once('clientReady', async () => {
         } catch (error) {
             console.error(`[Clock] Failed to update time channel:`, error.message);
         }
-    }, 6 * 60 * 1000); // 6 minutes to respect Discord's rate limits
+    }, 6 * 60 * 1000); 
 
     // ==========================================
-    // YOUTUBE BACKGROUND CHECKER
+    // YOUTUBE BACKGROUND CHECKER (API VERSION)
     // ==========================================
     setInterval(async () => {
         try {
             // 1. Get all tracked channels from MongoDB
             const trackedChannels = await YouTubeDB.find({});
+            const API_KEY = process.env.YOUTUBE_API_KEY;
 
-            // 2. Loop through each channel and check their RSS feed
+            if (!API_KEY) {
+                console.log("[YouTube API] Warning: YOUTUBE_API_KEY is missing in .env");
+                return;
+            }
+
+            // 2. Loop through each channel
             for (const dbChannel of trackedChannels) {
                 try {
-                    const feed = await parser.parseURL(`https://www.youtube.com/feeds/videos.xml?channel_id=${dbChannel.ytChannelId}`);
-                    
-                    if (feed.items.length > 0) {
-                        const latestVideo = feed.items[0]; // The first item is always the newest
+                    // Quick trick: A channel's "Uploads" playlist is just their Channel ID with 'UU' instead of 'UC'
+                    const uploadsPlaylistId = dbChannel.ytChannelId.replace(/^UC/, 'UU');
+
+                    // Fetch the latest video from their uploads playlist
+                    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=1&key=${API_KEY}`);
+                    const data = await response.json();
+
+                    // Check if we got a valid video back
+                    if (data.items && data.items.length > 0) {
+                        const latestVideo = data.items[0].snippet;
+                        const videoId = latestVideo.resourceId.videoId;
+                        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                        const channelName = latestVideo.channelTitle;
 
                         // Turn the saved string into an array of the last 5 IDs
                         let savedIds = dbChannel.lastVideoId ? dbChannel.lastVideoId.split(',') : [];
 
                         // Check if the latest video's ID is ALREADY in our list
-                        if (!savedIds.includes(latestVideo.id)) {
+                        if (!savedIds.includes(videoId)) {
                             
                             // We found a new video! Let's send the message
                             const discordChannel = client.channels.cache.get(dbChannel.discordChannelId);
                             if (discordChannel) {
-                                await discordChannel.send(`**${latestVideo.author}** just posted a video!\n${latestVideo.link}`);
+                                await discordChannel.send(`**${channelName}** just posted a video!\n${videoUrl}`);
                             }
 
                             // Add the new video ID to the front of the array
-                            savedIds.unshift(latestVideo.id);
+                            savedIds.unshift(videoId);
                             
                             // Keep only the last 5 video IDs to prevent the string from getting too long
                             if (savedIds.length > 5) savedIds.pop();
@@ -234,30 +238,26 @@ client.once('clientReady', async () => {
                             dbChannel.lastVideoId = savedIds.join(',');
                             await dbChannel.save();
                         }
+                    } else if (data.error) {
+                        console.error(`[YouTube API Error for ${dbChannel.ytChannelName}]:`, data.error.message);
                     }
-                } catch (feedError) {
-                    console.error(`[YouTube] Failed to fetch feed for ${dbChannel.ytChannelName}:`, feedError.message);
+                } catch (fetchError) {
+                    console.error(`[YouTube] Failed to fetch data for ${dbChannel.ytChannelName}:`, fetchError.message);
                 }
             }
         } catch (dbError) {
             console.error(`[YouTube] Database error during interval:`, dbError);
         }
-    }, 1 * 60 * 1000); // Check every 1 minute
+    }, 3 * 60 * 1000); // 3-minute interval to protect your daily quota
 });
 
 // --- 5. MESSAGE COMMAND LISTENER ---
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // ==========================================
-    // RUN DYNAMIC DATABASE TRANSLATOR & CHATBOT
-    // ==========================================
     if (await personaChatbot(message)) return;
     if (await databaseTranslator(message)) return;
 
-    // ==========================================
-    // COMMAND EXECUTION
-    // ==========================================
     const args = message.content.trim().split(/\s+/);
     const commandName = args.shift().toLowerCase();
 
