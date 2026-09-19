@@ -90,7 +90,7 @@ module.exports = {
 
                 // Link Button
                 const linkButton = new ButtonBuilder()
-                    .setLabel('Open Banner Link')
+                    .setLabel('Link')
                     .setStyle(ButtonStyle.Link)
                     .setURL(currentImageUrl);
 
