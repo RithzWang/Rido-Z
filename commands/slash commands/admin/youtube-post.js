@@ -15,7 +15,7 @@ const YouTubeDB = require('../../../schema/youtubeSchema');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('youtube')
+        .setName('yt')
         .setDescription('Manage automated YouTube video announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
