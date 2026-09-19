@@ -5,7 +5,7 @@ module.exports = async (message) => {
     // Checks if it is a thread, matches the thread ID, and matches the parent forum ID
     if (!message.channel.isThread() || 
         message.channel.id !== '1550817518669664296' || 
-        message.channel.parentId !== '155080136509621046') {
+        message.channel.parentId !== '1550801365096210463') {
         return false;
     }
     
