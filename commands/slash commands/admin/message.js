@@ -4,7 +4,7 @@ module.exports = {
     guildOnly: true,
 
     data: new SlashCommandBuilder()
-        .setName('message')
+        .setName('msg')
         .setDescription('Manage bot messages')
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
