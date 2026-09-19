@@ -4,7 +4,7 @@ const Translator = require('../../../schema/TranslatorSchema.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('translator')
-        .setDescription('Manage translation channels for your server')
+        .setDescription('Translator')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         // 1. /translator set
         .addSubcommand(subcommand =>
