@@ -11,12 +11,11 @@ const {
     ComponentType
 } = require('discord.js');
 
-// 👇 Import your MongoDB model from the Schema folder
 const YouTubeDB = require('../../../schema/youtubeSchema'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('youtube-post')
+        .setName('youtube')
         .setDescription('Manage automated YouTube video announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
@@ -24,8 +23,8 @@ module.exports = {
                 .setName('add')
                 .setDescription('Add a YouTube channel to be tracked')
                 .addStringOption(option => 
-                    option.setName('yt_channel_id')
-                        .setDescription('The YouTube Channel ID (starts with UC)')
+                    option.setName('youtube_link') // 👈 Changed option name
+                        .setDescription('A YouTube Channel Link, @handle, or ID')
                         .setRequired(true))
                 .addChannelOption(option => 
                     option.setName('channel')
@@ -38,10 +37,10 @@ module.exports = {
                 .setName('remove')
                 .setDescription('Remove a tracked YouTube channel')
                 .addStringOption(option => 
-                    option.setName('yt_channel_id')
-                        .setDescription('The YouTube Channel ID to remove')
+                    option.setName('yt_channel_id') 
+                        .setDescription('Select the channel to remove')
                         .setRequired(true)
-                        .setAutocomplete(true))
+                        .setAutocomplete(true)) // Autocomplete makes finding the channel easy!
         )
         .addSubcommand(subcommand =>
             subcommand
@@ -54,17 +53,13 @@ module.exports = {
     // ==========================================
     async autocomplete(interaction) {
         const focusedValue = interaction.options.getFocused().toLowerCase();
-        
-        // Fetch all channels from MongoDB
         const dbChannels = await YouTubeDB.find({});
         
-        // Filter channels by matching the YouTube Name or ID
         const filtered = dbChannels.filter(entry => 
             entry.ytChannelName.toLowerCase().includes(focusedValue) || 
             entry.ytChannelId.toLowerCase().includes(focusedValue)
         );
 
-        // Discord limits autocomplete to 25 choices
         await interaction.respond(
             filtered.slice(0, 25).map(entry => ({ 
                 name: `${entry.ytChannelName} (Posts in #${interaction.client.channels.cache.get(entry.discordChannelId)?.name || 'Unknown'})`, 
@@ -85,16 +80,10 @@ module.exports = {
         if (subcommand === 'add') {
             await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
-            const ytId = interaction.options.getString('yt_channel_id');
+            const input = interaction.options.getString('youtube_link');
             const targetChannel = interaction.options.getChannel('channel');
 
-            // 1. Check if it's already added in MongoDB
-            const exists = await YouTubeDB.findOne({ ytChannelId: ytId, discordChannelId: targetChannel.id });
-            if (exists) {
-                return interaction.editReply(`<:warn:1528710101324529775> THIS YOUTUBE CHANNEL IS ALREADY BEING TRACKED IN <#${targetChannel.id}>`);
-            }
-
-            // 2. Check Bot Permissions in the target channel
+            // 1. Check Bot Permissions first
             const botPermissions = targetChannel.permissionsFor(interaction.client.user);
             const requiredPerms = [
                 PermissionFlagsBits.ViewChannel,
@@ -108,27 +97,54 @@ module.exports = {
                 return interaction.editReply(`<:no:1528709599740559415> I AM MISSING REQUIRED PERMISSIONS IN <#${targetChannel.id}>.\nPLEASE ENSURE I HAVE: **__View Channel__, __Send Messages__ and __Embed Links__**`);
             }
 
-            // 3. Validate YouTube Channel via YouTube Data API v3
-            let ytName = "Unknown Channel";
-            let ytLink = `https://youtube.com/channel/${ytId}`;
-            let lastVidId = null;
+            // 2. Parse the Input to figure out what kind of link they provided
             const API_KEY = process.env.YOUTUBE_API_KEY; 
-            
+            let apiSearchUrl = '';
+
+            if (/^UC[\w-]{22}$/.test(input)) {
+                // They pasted a raw Channel ID (e.g., UC1234567890abcdefg)
+                apiSearchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id=${input}&key=${API_KEY}`;
+            } else if (input.includes('/channel/UC')) {
+                // They pasted a full /channel/ link
+                const idMatch = input.match(/\/channel\/(UC[\w-]{22})/);
+                if (idMatch) apiSearchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id=${idMatch[1]}&key=${API_KEY}`;
+            } else if (input.includes('@')) {
+                // They pasted an @handle or a youtube.com/@handle link
+                const handleMatch = input.match(/@([\w.-]+)/);
+                if (handleMatch) apiSearchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&forHandle=@${handleMatch[1]}&key=${API_KEY}`;
+            } else if (input.includes('/user/')) {
+                // They pasted a legacy /user/ link
+                const userMatch = input.match(/\/user\/([\w.-]+)/);
+                if (userMatch) apiSearchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&forUsername=${userMatch[1]}&key=${API_KEY}`;
+            } else {
+                return interaction.editReply(`<:no:1528709599740559415> INVALID FORMAT. Please provide a valid YouTube channel link, @handle, or ID.`);
+            }
+
+            // 3. Fetch from YouTube API
+            let ytName, ytLink, ytId, lastVidId;
             try {
-                // Fetch channel details to get the name and the "uploads" playlist ID
-                const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id=${ytId}&key=${API_KEY}`);
+                const channelRes = await fetch(apiSearchUrl);
                 const channelData = await channelRes.json();
 
                 if (!channelData.items || channelData.items.length === 0) {
-                    return interaction.editReply(`<:no:1528709599740559415> INVALID YOUTUBE CHANNEL ID.\nENSURE YOU ARE USING THE ID STARTING WITH \`UC...\``);
+                    return interaction.editReply(`<:no:1528709599740559415> COULD NOT FIND THAT YOUTUBE CHANNEL. Double check the link!`);
                 }
 
+                // Extract the exact Channel ID that YouTube returned
+                ytId = channelData.items[0].id;
                 ytName = channelData.items[0].snippet.title;
-                
+                ytLink = `https://youtube.com/channel/${ytId}`;
+
+                // 4. Check if we are already tracking this channel in MongoDB
+                const exists = await YouTubeDB.findOne({ ytChannelId: ytId, discordChannelId: targetChannel.id });
+                if (exists) {
+                    return interaction.editReply(`<:warn:1528710101324529775> **${ytName}** IS ALREADY BEING TRACKED IN <#${targetChannel.id}>`);
+                }
+
                 // Get the ID for the channel's "Uploads" playlist
                 const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
-                // Fetch the most recent video from their uploads playlist
+                // Fetch the most recent video
                 const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=1&key=${API_KEY}`);
                 const playlistData = await playlistRes.json();
 
@@ -140,7 +156,7 @@ module.exports = {
                 return interaction.editReply(`<:no:1528709599740559415> AN ERROR OCCURRED WHILE CONTACTING THE YOUTUBE API.`);
             }
 
-            // 4. Save to MongoDB
+            // 5. Save to MongoDB
             await YouTubeDB.create({
                 ytChannelId: ytId,
                 ytChannelName: ytName,
@@ -158,7 +174,6 @@ module.exports = {
         if (subcommand === 'remove') {
             const ytIdToRemove = interaction.options.getString('yt_channel_id'); 
             
-            // Delete from MongoDB
             const removedEntry = await YouTubeDB.findOneAndDelete({ ytChannelId: ytIdToRemove });
 
             if (!removedEntry) {
@@ -196,7 +211,6 @@ module.exports = {
                         new TextDisplayBuilder().setContent("## Youtube Poster") 
                     );
 
-                // Add text displays for each item on this page
                 currentItems.forEach((item) => {
                     container.addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(
@@ -205,7 +219,6 @@ module.exports = {
                     );
                 });
 
-                // Action Row for Pagination
                 const actionRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
                         .setCustomId("yt_first")
@@ -239,7 +252,6 @@ module.exports = {
                 flags: [MessageFlags.IsComponentsV2] 
             });
 
-            // If there's only 1 page, stop here
             if (maxPages === 1) return; 
 
             const collector = response.createMessageComponentCollector({ 
