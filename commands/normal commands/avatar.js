@@ -34,16 +34,17 @@ module.exports = {
             if (!targetUser && !args[0]) targetUser = message.author;
             if (!targetUser) return;
 
+            // 👇 NEW: Trigger the typing indicator so users know it's loading
+            await message.channel.sendTyping();
+
             // 2. Fetch Logic
             let targetMember = null;
             try { targetMember = await message.guild.members.fetch(targetUser.id); } catch (err) { targetMember = null; }
 
-            // Keep forceStatic: false so GIFs return as .gif
             const globalAvatar = targetUser.displayAvatarURL({ size: 1024, forceStatic: false });
             const displayAvatar = targetMember ? targetMember.displayAvatarURL({ size: 1024, forceStatic: false }) : globalAvatar;
             const hasServerAvatar = globalAvatar !== displayAvatar;
 
-            // Helper to download the raw binary data (works for GIF, PNG, WebP, etc.)
             const downloadAvatar = async (url) => {
                 const response = await fetch(url);
                 const arrayBuffer = await response.arrayBuffer();
@@ -56,14 +57,13 @@ module.exports = {
                 const titleText = isShowingGlobal ? `## Avatar Picture` : `## Per-server Avatar Picture`;
                 const bodyText = isShowingGlobal ? `Avatar for <@${targetUser.id}>` : `Per-server Avatar for <@${targetUser.id}>`;
 
-                // Detect file extension dynamically to preserve GIF animations
                 const isGif = currentImageUrl.includes('.gif');
                 const fileName = isGif ? 'avatar.gif' : 'avatar.png';
 
-                // Download the raw avatar and wrap it in an attachment
                 const avatarBuffer = await downloadAvatar(currentImageUrl);
                 const attachment = new AttachmentBuilder(avatarBuffer, { name: fileName });
 
+                // Toggle Button
                 const toggleButton = new ButtonBuilder()
                     .setCustomId('toggle_av_msg')
                     .setStyle(ButtonStyle.Secondary);
@@ -76,22 +76,26 @@ module.exports = {
                 }
                 if (disableToggle) toggleButton.setDisabled(true);
 
+                // Link Button
+                const linkButton = new ButtonBuilder()
+                    .setLabel('Open Avatar Link')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(currentImageUrl);
+
                 const container = new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`))
                     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
-                    // Reference the newly attached file directly
                     .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
                         new MediaGalleryItemBuilder().setURL(`attachment://${fileName}`)
                     ))
                     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
-                    .addActionRowComponents(new ActionRowBuilder().addComponents(toggleButton));
+                    .addActionRowComponents(new ActionRowBuilder().addComponents(toggleButton, linkButton));
 
                 return { components: [container], files: [attachment] };
             };
 
             let isGlobalMode = true;
             
-            // Build the initial payload and download avatar
             const initialPayload = await buildMessagePayload(true);
 
             // 4. Send Reply
