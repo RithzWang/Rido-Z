@@ -43,6 +43,12 @@ const client = new Client({
         Partials.GuildMember, 
         Partials.User 
     ],
+    // 👇 This forces the bot to show the mobile icon status
+    ws: { 
+        properties: { 
+            browser: 'Discord iOS' 
+        } 
+    }
 });
 
 // --- COLLECTIONS ---
@@ -141,7 +147,8 @@ client.once('clientReady', async () => {
     // DYNAMIC STATUS CLOCK
     // ==========================================
     setInterval(() => {
-        if (statusManager.getState().mode !== 'default') return;
+        // Ensure statusManager is defined elsewhere in your project if you use it here
+        if (typeof statusManager !== 'undefined' && statusManager.getState().mode !== 'default') return;
 
         const now = moment().tz('Asia/Bangkok');
         const formattedTime = now.format('HH:mm');
