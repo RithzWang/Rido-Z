@@ -5,7 +5,7 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName('purge')
-        .setDescription('Delete a specified number of messages')
+        .setDescription('Remove Messages')
         .setDMPermission(false)
         // ManageMessages is standard for purging, but you can change to Administrator if preferred
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
