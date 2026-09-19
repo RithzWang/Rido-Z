@@ -10,7 +10,7 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         
         // --- SEND SUBCOMMAND ---
-        .addSubcommand(sub => sub.setName('send').setDescription('Send a message')
+        .addSubcommand(sub => sub.setName('create').setDescription('Send a message')
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Where to send?').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
