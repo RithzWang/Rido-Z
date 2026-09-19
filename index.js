@@ -19,7 +19,6 @@ const youtubeTracker = require('./feature/youtube-track.js');
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
 const personaChatbot = require('./feature/chatbot.js'); 
-const statusManager = require('./utils/statusManager.js'); 
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -158,7 +157,7 @@ client.once('clientReady', async () => {
                 name: 'customstatus', 
                 type: ActivityType.Custom, 
                 emoji: '🐦‍🔥',
-                state: `${timeEmoji} ${formattedTime} (GMT+7)` 
+                state: `${formattedTime} (GMT+7)` // ${timeEmoji}
             }],
             status: 'dnd'
         });
