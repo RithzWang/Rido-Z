@@ -7,8 +7,12 @@ const {
     Collection,
     REST,
     Routes,
-    ActivityType
+    ActivityType,
+    DefaultWebSocketManagerOptions
 } = require('discord.js');
+
+// Override the browser property to trigger the mobile icon
+DefaultWebSocketManagerOptions.identifyProperties.browser = 'Discord Android';
 
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
@@ -44,12 +48,7 @@ const client = new Client({
         Partials.User 
     ],
     // 👇 This forces the bot to show the mobile icon status
-    ws: { 
-        properties: { 
-            browser: 'Discord Android',
-            device: 'Discord Android'
-        } 
-    }
+    
 });
 
 // --- COLLECTIONS ---
@@ -167,7 +166,7 @@ client.once('clientReady', async () => {
                 emoji: '🐦‍🔥',
                 state: `${formattedTime} (GMT+7)` // ${timeEmoji}
             }],
-            status: 'dnd'
+            status: 'online'
         });
     }, 15000); 
 
