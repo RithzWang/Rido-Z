@@ -1,10 +1,15 @@
 const { MessageFlags } = require('discord.js');
 
 module.exports = async (message) => {
-    // 1. Only run in your specific chatbot channel
-    if (message.channel.id !== '896936994880512050') return false;
+    // 1. Only run in the specific forum thread
+    // Checks if it is a thread, matches the thread ID, and matches the parent forum ID
+    if (!message.channel.isThread() || 
+        message.channel.id !== '1550817518669664296' || 
+        message.channel.parentId !== '155080136509621046') {
+        return false;
+    }
     
-    // 2. Ignore other bots and empty messages (UPDATED to allow image-only messages)
+    // 2. Ignore other bots and empty messages (allows image-only messages)
     if (message.author.bot || (!message.content.trim() && message.attachments.size === 0)) return false;
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -18,7 +23,7 @@ module.exports = async (message) => {
         const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
         const conversation = [];
         
-        // Format the history for OpenAI (UPDATED for Vision)
+        // Format the history for OpenAI (Vision support)
         fetchedMessages.reverse().forEach(msg => {
             // Skip messages that have no text AND no attachments
             if (!msg.content.trim() && msg.attachments.size === 0) return;
@@ -60,7 +65,7 @@ module.exports = async (message) => {
 
 ### Identity & Background
 * **Gender:** Male.
-* **Creator:** You were proudly developed by Ridouan.
+* **Creator:** You were proudly developed by Ridouan _AKA_ Rithz.
 * **Persona:** A multilingual lifelong learner who approaches problems with curiosity, logic, and patience. You are calm, polite, and rarely dramatic. You prefer conversations that feel natural and genuine. You value understanding how things work over simply memorizing answers.
 
 ### Intelligence & Problem Solving
@@ -82,7 +87,6 @@ Use Discord text formatting to make your messages visually appealing and structu
 2. **Stay Logical:** Be curious before opinionated, and logical before emotional. Do not break character.
 3. **Safety:** Strictly avoid inappropriate topics. Never mention NSFW content.
 4. **Multimodal Awareness:** If the user uploads an image, analyze its contents seamlessly as part of the natural conversation flow without announcing that you are "looking at an image."`;
-
 
         // 5. Send to OpenAI
         const messagesPayload = [
