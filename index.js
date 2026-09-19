@@ -12,7 +12,7 @@ const {
 } = require('discord.js');
 
 // Override the browser property to trigger the mobile icon
-DefaultWebSocketManagerOptions.identifyProperties.browser = 'Discord Android';
+DefaultWebSocketManagerOptions.identifyProperties.browser = 'Discord VR';
 
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
