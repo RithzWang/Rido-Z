@@ -63,6 +63,16 @@ module.exports = {
                     option.setName('message')
                         .setDescription('The new text for the starter message.')
                         .setRequired(false))
+                .addIntegerOption(option =>
+                    option.setName('hide_after')
+                        .setDescription('Update when to hide post after inactivity')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: '1 Hour', value: 60 },
+                            { name: '24 Hours', value: 1440 },
+                            { name: '3 Days', value: 4320 },
+                            { name: '1 Week', value: 10080 }
+                        ))
         ),
 
     async execute(interaction) {
@@ -95,7 +105,7 @@ module.exports = {
                 const thread = await forumChannel.threads.create({
                     name: title,
                     message: messagePayload,
-                    autoArchiveDuration: hideAfter, // Applies the hiding behavior
+                    autoArchiveDuration: hideAfter,
                     reason: `Forum post created via command by ${interaction.user.tag}`
                 });
 
@@ -108,10 +118,12 @@ module.exports = {
                 const postId = interaction.options.getString('post_id');
                 const newTitle = interaction.options.getString('title');
                 const newMessage = interaction.options.getString('message');
+                const hideAfter = interaction.options.getInteger('hide_after');
 
-                if (!newTitle && !newMessage) {
+                // Check ensures they are actually trying to edit at least one property
+                if (!newTitle && !newMessage && !hideAfter) {
                     return interaction.editReply({ 
-                        content: '<:no:1528709599740559415> YOU MUST PROVIDE A NEW TITLE OR MESSAGE' 
+                        content: '<:no:1528709599740559415> YOU MUST PROVIDE A NEW TITLE, MESSAGE, OR HIDE DURATION' 
                     });
                 }
 
@@ -123,10 +135,16 @@ module.exports = {
                     });
                 }
 
-                if (newTitle) {
-                    await thread.edit({ name: newTitle });
+                // Batch thread settings updates (title and archive duration)
+                const threadUpdates = {};
+                if (newTitle) threadUpdates.name = newTitle;
+                if (hideAfter) threadUpdates.autoArchiveDuration = hideAfter;
+
+                if (Object.keys(threadUpdates).length > 0) {
+                    await thread.edit(threadUpdates);
                 }
 
+                // Starter message edit needs to happen separately
                 if (newMessage) {
                     const starterMessage = await thread.fetchStarterMessage();
                     if (starterMessage.author.id !== interaction.client.user.id) {
