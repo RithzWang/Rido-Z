@@ -208,7 +208,7 @@ module.exports = {
 
                 const container = new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## Youtube Poster") 
+                        new TextDisplayBuilder().setContent("## YOUTUBE TRACKING") 
                     );
 
                 currentItems.forEach((item) => {
