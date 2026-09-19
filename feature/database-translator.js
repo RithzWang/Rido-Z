@@ -26,6 +26,10 @@ module.exports = async (message) => {
 
         if (!channelLang) return false;
 
+        // Trigger the typing indicator before making the OpenAI API call.
+        // The .catch() ensures the bot doesn't crash if it lacks typing permissions in a specific channel.
+        await message.channel.sendTyping().catch(() => {});
+
         const text = message.content.trim();
         let systemPrompt = "";
 
