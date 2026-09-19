@@ -5,12 +5,12 @@ module.exports = {
 
     data: new SlashCommandBuilder()
         .setName('msg')
-        .setDescription('Manage bot messages')
+        .setDescription('Message')
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         
         // --- SEND SUBCOMMAND ---
-        .addSubcommand(sub => sub.setName('send').setDescription('Create a message')
+        .addSubcommand(sub => sub.setName('send').setDescription('Send a message')
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Where to send?').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
@@ -29,7 +29,7 @@ module.exports = {
         )
 
         // --- REPLY SUBCOMMAND ---
-        .addSubcommand(sub => sub.setName('reply').setDescription('Reply directly to a specific message')
+        .addSubcommand(sub => sub.setName('reply').setDescription('Reply to a message')
             .addStringOption(opt => opt.setName('message_id').setDescription('The ID of the message to reply to').setRequired(true))
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
@@ -39,7 +39,7 @@ module.exports = {
         )
 
         // --- CONTAINER SUBCOMMAND (V2 COMPONENTS) ---
-        .addSubcommand(sub => sub.setName('container').setDescription('Send a message in a V2 container')
+        .addSubcommand(sub => sub.setName('container').setDescription('Send a message in a container')
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Where to send?').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
@@ -53,13 +53,13 @@ module.exports = {
         )
 
         // --- PIN SUBCOMMAND ---
-        .addSubcommand(sub => sub.setName('pin').setDescription('Pin a message in the channel')
+        .addSubcommand(sub => sub.setName('pin').setDescription('Pin a message')
             .addStringOption(opt => opt.setName('message_id').setDescription('Message ID').setRequired(true))
             .addChannelOption(opt => opt.setName('channel').setDescription('Channel the message is in').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
         )
         
         // --- STICKER SUBCOMMAND ---
-        .addSubcommand(sub => sub.setName('sticker').setDescription('Send a sticker to the channel')
+        .addSubcommand(sub => sub.setName('sticker').setDescription('Send a sticker')
             .addStringOption(opt => opt.setName('sticker_id').setDescription('The ID of the sticker to send').setRequired(true))
             .addChannelOption(opt => opt.setName('channel').setDescription('Where to send?').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
         ),
