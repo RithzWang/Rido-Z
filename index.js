@@ -225,7 +225,7 @@ client.once('clientReady', async () => {
                             // We found a new video! Let's send the message
                             const discordChannel = client.channels.cache.get(dbChannel.discordChannelId);
                             if (discordChannel) {
-                                await discordChannel.send(`**${channelName}** just posted a video!\n${videoUrl}`);
+                                await discordChannel.send(`**${channelName}** just posted a new video!\n${videoUrl}`);
                             }
 
                             // Add the new video ID to the front of the array
