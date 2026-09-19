@@ -10,8 +10,6 @@ const {
     ActionRowBuilder,
     ComponentType
 } = require('discord.js');
-const Parser = require('rss-parser');
-const parser = new Parser();
 
 // 👇 Import your MongoDB model from the Schema folder
 const YouTubeDB = require('../../../schema/youtubeSchema'); 
@@ -40,7 +38,7 @@ module.exports = {
                 .setName('remove')
                 .setDescription('Remove a tracked YouTube channel')
                 .addStringOption(option => 
-                    option.setName('yt_channel_id') // 👈 Changed to yt_channel_id
+                    option.setName('yt_channel_id')
                         .setDescription('The YouTube Channel ID to remove')
                         .setRequired(true)
                         .setAutocomplete(true))
@@ -110,18 +108,36 @@ module.exports = {
                 return interaction.editReply(`<:no:1528709599740559415> I AM MISSING REQUIRED PERMISSIONS IN <#${targetChannel.id}>.\nPLEASE ENSURE I HAVE: **__View Channel__, __Send Messages__ and __Embed Links__**`);
             }
 
-            // 3. Validate YouTube Channel via RSS
+            // 3. Validate YouTube Channel via YouTube Data API v3
             let ytName = "Unknown Channel";
             let ytLink = `https://youtube.com/channel/${ytId}`;
             let lastVidId = null;
+            const API_KEY = process.env.YOUTUBE_API_KEY; 
             
             try {
-                const feed = await parser.parseURL(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`);
-                ytName = feed.title;
-                ytLink = feed.link;
-                if (feed.items.length > 0) lastVidId = feed.items[0].id; 
+                // Fetch channel details to get the name and the "uploads" playlist ID
+                const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&id=${ytId}&key=${API_KEY}`);
+                const channelData = await channelRes.json();
+
+                if (!channelData.items || channelData.items.length === 0) {
+                    return interaction.editReply(`<:no:1528709599740559415> INVALID YOUTUBE CHANNEL ID.\nENSURE YOU ARE USING THE ID STARTING WITH \`UC...\``);
+                }
+
+                ytName = channelData.items[0].snippet.title;
+                
+                // Get the ID for the channel's "Uploads" playlist
+                const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+
+                // Fetch the most recent video from their uploads playlist
+                const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=1&key=${API_KEY}`);
+                const playlistData = await playlistRes.json();
+
+                if (playlistData.items && playlistData.items.length > 0) {
+                    lastVidId = playlistData.items[0].snippet.resourceId.videoId;
+                }
             } catch (error) {
-                return interaction.editReply(`<:no:1528709599740559415> INVALID YOUTUBE CHANNEL ID OR THE CHANNEL HAS NO PUBLIC VIDEOS.\nENSURE YOU ARE USING THE ID STARTING WITH \`UC...\``);
+                console.error("YouTube API Error:", error);
+                return interaction.editReply(`<:no:1528709599740559415> AN ERROR OCCURRED WHILE CONTACTING THE YOUTUBE API.`);
             }
 
             // 4. Save to MongoDB
@@ -140,7 +156,6 @@ module.exports = {
         // REMOVE SUBCOMMAND
         // ------------------------------------------
         if (subcommand === 'remove') {
-            // 👈 Changed to grab yt_channel_id
             const ytIdToRemove = interaction.options.getString('yt_channel_id'); 
             
             // Delete from MongoDB
@@ -151,7 +166,7 @@ module.exports = {
             }
 
             return interaction.reply({ 
-                content: `<:yes:1528709597647470615> SUCCESSFULLY STOP TRACKING **${removedEntry.ytChannelName}**.`, 
+                content: `<:yes:1528709597647470615> SUCCESSFULLY STOPPED TRACKING **${removedEntry.ytChannelName}**.`, 
                 flags: [MessageFlags.Ephemeral] 
             });
         }
