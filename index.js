@@ -167,7 +167,7 @@ client.once('clientReady', async () => {
                 emoji: '🐦‍🔥',
                 state: `${formattedTime} (GMT+7)` // ${timeEmoji}
             }],
-            status: 'dnd'
+            status: 'online'
         });
     }, 15000); 
 
