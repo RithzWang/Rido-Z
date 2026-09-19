@@ -21,7 +21,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('add')
-                .setDescription('Add a YouTube channel to be tracked')
+                .setDescription('Add a YouTube channel')
                 .addStringOption(option => 
                     option.setName('youtube_link') // 👈 Changed option name
                         .setDescription('A YouTube Channel Link, @handle, or ID')
@@ -37,7 +37,7 @@ module.exports = {
                 .setName('remove')
                 .setDescription('Remove a tracked YouTube channel')
                 .addStringOption(option => 
-                    option.setName('yt_channel_id') 
+                    option.setName('yt_channel') 
                         .setDescription('Select the channel to remove')
                         .setRequired(true)
                         .setAutocomplete(true)) // Autocomplete makes finding the channel easy!
