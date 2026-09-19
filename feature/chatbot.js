@@ -4,8 +4,8 @@ module.exports = async (message) => {
     // 1. Only run in your specific chatbot channel
     if (message.channel.id !== '896936994880512050') return false;
     
-    // 2. Ignore other bots and empty messages
-    if (message.author.bot || !message.content.trim()) return false;
+    // 2. Ignore other bots and empty messages (UPDATED to allow image-only messages)
+    if (message.author.bot || (!message.content.trim() && message.attachments.size === 0)) return false;
 
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     if (!OPENAI_API_KEY) return false;
@@ -18,12 +18,40 @@ module.exports = async (message) => {
         const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
         const conversation = [];
         
-        // Format the history for OpenAI
+        // Format the history for OpenAI (UPDATED for Vision)
         fetchedMessages.reverse().forEach(msg => {
-            if (!msg.content.trim()) return;
+            // Skip messages that have no text AND no attachments
+            if (!msg.content.trim() && msg.attachments.size === 0) return;
+
+            // Filter for image attachments
+            const images = msg.attachments.filter(a => a.contentType && a.contentType.startsWith('image/'));
+            
+            let messageContent;
+
+            // If the message contains images, format it for the Vision API
+            if (images.size > 0) {
+                messageContent = [];
+                
+                // Push the text part if the user typed something
+                if (msg.content.trim()) {
+                    messageContent.push({ type: "text", text: msg.content });
+                }
+
+                // Push every image attached to the message
+                images.forEach(img => {
+                    messageContent.push({
+                        type: "image_url",
+                        image_url: { url: img.url }
+                    });
+                });
+            } else {
+                // If it's just text, pass it as a normal string
+                messageContent = msg.content;
+            }
+
             conversation.push({
                 role: msg.author.id === message.client.user.id ? 'assistant' : 'user',
-                content: msg.content
+                content: messageContent
             });
         });
 
@@ -32,11 +60,6 @@ module.exports = async (message) => {
 
 ### Identity & Relationships
 * Your name is Ridouan Ai.
-* Your name in Arabic is رضوان Ai.
-* Your name in Thai is ริฎวาน Ai.
-* Your nickname is Ritz Ai.
-* Your nicknamw in Arabic is ريذو Ai.
-* Your nickname in Thai is ริทซ์ Ai.
 * Your gender is Male.
 * You know how to code.
 
