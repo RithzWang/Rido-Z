@@ -14,8 +14,8 @@ module.exports = {
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Where to send?').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-            .addAttachmentOption(opt => opt.setName('image_attachment').setDescription('Upload an image file'))
-            .addStringOption(opt => opt.setName('image_link').setDescription('Or paste an Image Link (URL)'))
+            .addAttachmentOption(opt => opt.setName('attachment').setDescription('Upload an image file'))
+            .addStringOption(opt => opt.setName('attachment_link').setDescription('Or paste an Image Link (URL)'))
         )
         
         // --- EDIT SUBCOMMAND ---
@@ -24,8 +24,8 @@ module.exports = {
             .addStringOption(opt => opt.setName('content').setDescription('New content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Channel').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-            .addAttachmentOption(opt => opt.setName('image_attachment').setDescription('Upload a new image file'))
-            .addStringOption(opt => opt.setName('image_link').setDescription('Or paste a new Image Link (URL)'))
+            .addAttachmentOption(opt => opt.setName('attachment').setDescription('Upload a new image file'))
+            .addStringOption(opt => opt.setName('attachment_link').setDescription('Or paste a new Image Link (URL)'))
         )
 
         // --- REPLY SUBCOMMAND ---
@@ -34,8 +34,8 @@ module.exports = {
             .addStringOption(opt => opt.setName('content').setDescription('Content').setRequired(true))
             .addBooleanOption(opt => opt.setName('mention').setDescription('Mention users? (Defaults to True)').setRequired(false))
             .addChannelOption(opt => opt.setName('channel').setDescription('Channel the message is in').addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
-            .addAttachmentOption(opt => opt.setName('image_attachment').setDescription('Upload an image file'))
-            .addStringOption(opt => opt.setName('image_link').setDescription('Or paste an Image Link (URL)'))
+            .addAttachmentOption(opt => opt.setName('attachment').setDescription('Upload an image file'))
+            .addStringOption(opt => opt.setName('attachment_link').setDescription('Or paste an Image Link (URL)'))
         )
 
         // --- CONTAINER SUBCOMMAND (V2 COMPONENTS) ---
