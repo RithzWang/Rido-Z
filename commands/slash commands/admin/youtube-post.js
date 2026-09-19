@@ -17,6 +17,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('yt')
         .setDescription('Manage automated YouTube video announcements')
+        .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
             subcommand
