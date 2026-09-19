@@ -11,7 +11,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('create')
-                .setDescription('Create a new post in a forum channel.')
+                .setDescription('Create a post in a forum channel.')
                 .addChannelOption(option =>
                     option.setName('forum')
                         .setDescription('The forum channel to post in.')
