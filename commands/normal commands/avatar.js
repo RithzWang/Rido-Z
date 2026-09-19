@@ -34,7 +34,6 @@ module.exports = {
             if (!targetUser && !args[0]) targetUser = message.author;
             if (!targetUser) return;
 
-            // 👇 NEW: Trigger the typing indicator so users know it's loading
             await message.channel.sendTyping();
 
             // 2. Fetch Logic
@@ -55,7 +54,11 @@ module.exports = {
             const buildMessagePayload = async (isShowingGlobal, disableToggle = false) => {
                 const currentImageUrl = isShowingGlobal ? globalAvatar : displayAvatar;
                 const titleText = isShowingGlobal ? `## Avatar Picture` : `## Per-server Avatar Picture`;
-                const bodyText = isShowingGlobal ? `Avatar for <@${targetUser.id}>` : `Per-server Avatar for <@${targetUser.id}>`;
+                
+                // 👇 UPDATED: Added `targetUser.username` in backticks
+                const bodyText = isShowingGlobal 
+                    ? `Avatar for <@${targetUser.id}> \`${targetUser.username}\`` 
+                    : `Per-server Avatar for <@${targetUser.id}> \`${targetUser.username}\``;
 
                 const isGif = currentImageUrl.includes('.gif');
                 const fileName = isGif ? 'avatar.gif' : 'avatar.png';
@@ -78,7 +81,7 @@ module.exports = {
 
                 // Link Button
                 const linkButton = new ButtonBuilder()
-                    .setLabel('Link')
+                    .setLabel('Open Avatar Link')
                     .setStyle(ButtonStyle.Link)
                     .setURL(currentImageUrl);
 
@@ -95,7 +98,6 @@ module.exports = {
             };
 
             let isGlobalMode = true;
-            
             const initialPayload = await buildMessagePayload(true);
 
             // 4. Send Reply
