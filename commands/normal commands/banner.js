@@ -10,14 +10,13 @@ const {
     MediaGalleryBuilder,     
     MediaGalleryItemBuilder, 
     ActionRowBuilder,
-    AttachmentBuilder // 👇 Added AttachmentBuilder
+    AttachmentBuilder
 } = require('discord.js');
 
 module.exports = {
     name: 'banner',
     aliases: ['bn'],
     description: 'Shows banner',
-   // channels: ['1456197056510165026', '1456197056510165029', '1456197056988319870'],
 
     async execute(message, args) {
         const allowedGuilds = ['878565984108150824']; 
@@ -33,10 +32,8 @@ module.exports = {
                 try { targetUser = await message.client.users.fetch(args[0]); } catch (e) { targetUser = null; }
             }
             if (!targetUser && !args[0]) targetUser = message.author;
-
             if (!targetUser) return;
 
-            // 👇 Trigger typing indicator so users know it's downloading
             await message.channel.sendTyping();
 
             // 2. Fetch Banner
@@ -55,7 +52,6 @@ module.exports = {
                 });
             }
 
-            // Helper to download the raw binary data (works for GIF, PNG, etc.)
             const downloadBanner = async (url) => {
                 const response = await fetch(url);
                 const arrayBuffer = await response.arrayBuffer();
@@ -66,13 +62,15 @@ module.exports = {
             const buildMessagePayload = async (isShowingGlobal, disableToggle = false) => {
                 const currentImageUrl = isShowingGlobal ? globalBanner : displayBanner;
                 const titleText = isShowingGlobal ? `## Banner Picture` : `## Per-server Banner Picture`;
-                const bodyText = isShowingGlobal ? `Banner for <@${targetUser.id}>` : `Per-server Banner for <@${targetUser.id}>`;
+                
+                // 👇 UPDATED: Added `targetUser.username` in backticks
+                const bodyText = isShowingGlobal 
+                    ? `Banner for <@${targetUser.id}> \`${targetUser.username}\`` 
+                    : `Per-server Banner for <@${targetUser.id}> \`${targetUser.username}\``;
 
-                // Detect file extension dynamically to preserve GIF animations
                 const isGif = currentImageUrl.includes('.gif');
                 const fileName = isGif ? 'banner.gif' : 'banner.png';
 
-                // Download the raw banner and wrap it in an attachment
                 const bannerBuffer = await downloadBanner(currentImageUrl);
                 const attachment = new AttachmentBuilder(bannerBuffer, { name: fileName });
 
@@ -90,16 +88,15 @@ module.exports = {
                 }
                 if (disableToggle) toggleButton.setDisabled(true);
 
-                // 👇 Link Button
+                // Link Button
                 const linkButton = new ButtonBuilder()
-                    .setLabel('Link')
+                    .setLabel('Open Banner Link')
                     .setStyle(ButtonStyle.Link)
                     .setURL(currentImageUrl);
 
                 const container = new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`))
                     .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
-                    // Reference the newly attached file directly
                     .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
                         new MediaGalleryItemBuilder().setURL(`attachment://${fileName}`)
                     ))
@@ -109,13 +106,10 @@ module.exports = {
                 return { components: [container], files: [attachment] };
             };
 
-            // If they don't have a global banner but do have a server banner, start on server mode
             let isGlobalMode = !!globalBanner;
-
-            // Build the initial payload and download banner
             const initialPayload = await buildMessagePayload(isGlobalMode);
 
-            // 4. Send Reply (SILENT & NO PING)
+            // 4. Send Reply
             const sentMessage = await message.reply({ 
                 components: initialPayload.components, 
                 files: initialPayload.files,
