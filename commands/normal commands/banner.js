@@ -9,7 +9,8 @@ const {
     SeparatorBuilder,        
     MediaGalleryBuilder,     
     MediaGalleryItemBuilder, 
-    ActionRowBuilder 
+    ActionRowBuilder,
+    AttachmentBuilder // 👇 Added AttachmentBuilder
 } = require('discord.js');
 
 module.exports = {
@@ -19,11 +20,8 @@ module.exports = {
    // channels: ['1456197056510165026', '1456197056510165029', '1456197056988319870'],
 
     async execute(message, args) {
-        // 👇 NEW: Array of allowed server IDs
         const allowedGuilds = ['878565984108150824']; 
         
-        // 👇 NEW: Check if the message is from a server, and if that server is in the allowed list.
-        // If not, return silently.
         if (!message.guild || !allowedGuilds.includes(message.guild.id)) {
             return; 
         }
@@ -36,8 +34,10 @@ module.exports = {
             }
             if (!targetUser && !args[0]) targetUser = message.author;
 
-            // If user not found, do nothing (return silently)
             if (!targetUser) return;
+
+            // 👇 Trigger typing indicator so users know it's downloading
+            await message.channel.sendTyping();
 
             // 2. Fetch Banner
             let targetMember = null;
@@ -55,12 +55,28 @@ module.exports = {
                 });
             }
 
+            // Helper to download the raw binary data (works for GIF, PNG, etc.)
+            const downloadBanner = async (url) => {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                return Buffer.from(arrayBuffer);
+            };
+
             // 3. Builder
-            const createBannerContainer = (isShowingGlobal, disableToggle = false) => {
-                const currentImage = isShowingGlobal ? globalBanner : displayBanner;
+            const buildMessagePayload = async (isShowingGlobal, disableToggle = false) => {
+                const currentImageUrl = isShowingGlobal ? globalBanner : displayBanner;
                 const titleText = isShowingGlobal ? `## Banner Picture` : `## Per-server Banner Picture`;
                 const bodyText = isShowingGlobal ? `Banner for <@${targetUser.id}>` : `Per-server Banner for <@${targetUser.id}>`;
 
+                // Detect file extension dynamically to preserve GIF animations
+                const isGif = currentImageUrl.includes('.gif');
+                const fileName = isGif ? 'banner.gif' : 'banner.png';
+
+                // Download the raw banner and wrap it in an attachment
+                const bannerBuffer = await downloadBanner(currentImageUrl);
+                const attachment = new AttachmentBuilder(bannerBuffer, { name: fileName });
+
+                // Toggle Button
                 const toggleButton = new ButtonBuilder()
                     .setCustomId('toggle_bn_msg')
                     .setStyle(ButtonStyle.Secondary);
@@ -74,25 +90,35 @@ module.exports = {
                 }
                 if (disableToggle) toggleButton.setDisabled(true);
 
+                // 👇 Link Button
+                const linkButton = new ButtonBuilder()
+                    .setLabel('Link')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(currentImageUrl);
+
                 const container = new ContainerBuilder()
-                   // .setAccentColor(0x888888)
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent(`${titleText}\n${bodyText}`))
-                    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false));
+                    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
+                    // Reference the newly attached file directly
+                    .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(
+                        new MediaGalleryItemBuilder().setURL(`attachment://${fileName}`)
+                    ))
+                    .addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
+                    .addActionRowComponents(new ActionRowBuilder().addComponents(toggleButton, linkButton));
 
-                if (currentImage) {
-                    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(currentImage)));
-                }
-
-                container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(false))
-                         .addActionRowComponents(new ActionRowBuilder().addComponents(toggleButton));
-                return container;
+                return { components: [container], files: [attachment] };
             };
 
+            // If they don't have a global banner but do have a server banner, start on server mode
             let isGlobalMode = !!globalBanner;
+
+            // Build the initial payload and download banner
+            const initialPayload = await buildMessagePayload(isGlobalMode);
 
             // 4. Send Reply (SILENT & NO PING)
             const sentMessage = await message.reply({ 
-                components: [createBannerContainer(isGlobalMode)], 
+                components: initialPayload.components, 
+                files: initialPayload.files,
                 flags: [MessageFlags.IsComponentsV2, MessageFlags.SuppressNotifications],
                 allowedMentions: { parse: [], repliedUser: false } 
             });
@@ -100,7 +126,10 @@ module.exports = {
             if (!(globalBanner && displayBanner)) return;
 
             // 5. Collector
-            const collector = sentMessage.createMessageComponentCollector({ componentType: ComponentType.Button, idle: 60_000 });
+            const collector = sentMessage.createMessageComponentCollector({ 
+                componentType: ComponentType.Button, 
+                idle: 60_000 
+            });
 
             collector.on('collect', async (i) => {
                 if (i.user.id !== message.author.id) {
@@ -110,20 +139,29 @@ module.exports = {
                         allowedMentions: { parse: [] }
                     });
                 }
+                
+                await i.deferUpdate(); 
                 isGlobalMode = !isGlobalMode;
-                await i.update({ 
-                    components: [createBannerContainer(isGlobalMode)], 
+                
+                const updatePayload = await buildMessagePayload(isGlobalMode);
+                
+                await i.editReply({ 
+                    components: updatePayload.components, 
+                    files: updatePayload.files,
                     flags: [MessageFlags.IsComponentsV2],
                     allowedMentions: { parse: [] }
                 });
             });
 
-            collector.on('end', () => {
-                sentMessage.edit({ 
-                    components: [createBannerContainer(isGlobalMode, true)], 
-                    flags: [MessageFlags.IsComponentsV2],
-                    allowedMentions: { parse: [] }
-                }).catch(() => {});
+            collector.on('end', async () => {
+                try {
+                    const endPayload = await buildMessagePayload(isGlobalMode, true);
+                    await sentMessage.edit({ 
+                        components: endPayload.components, 
+                        flags: [MessageFlags.IsComponentsV2],
+                        allowedMentions: { parse: [] }
+                    });
+                } catch (e) {}
             });
 
         } catch (error) {
