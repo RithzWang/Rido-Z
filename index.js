@@ -13,10 +13,8 @@ const {
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
-
-// 👇 ADD THIS LINE (Right below your other feature imports):
+// 👇 Import your YouTube background tracker
 const youtubeTracker = require('./feature/youtube-track.js');
-
 
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
@@ -187,7 +185,12 @@ client.once('clientReady', async () => {
         }
     }, 6 * 60 * 1000); 
 
+    // ==========================================
+    // START YOUTUBE BACKGROUND CHECKER
+    // ==========================================
+    youtubeTracker(client);
 
+}); // 👈 This closing bracket finishes the clientReady block
 
 // --- 5. MESSAGE COMMAND LISTENER ---
 client.on('messageCreate', async (message) => {
