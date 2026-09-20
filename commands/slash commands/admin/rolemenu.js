@@ -142,7 +142,6 @@ module.exports = {
 
             // --- BUILD CONTAINER ---
             const container = new ContainerBuilder()
-                .setAccentColor(0x888888)
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent(`### ${title}`)
                 )
@@ -274,7 +273,6 @@ module.exports = {
 
                 // --- REBUILD CONTAINER ---
                 const newContainer = new ContainerBuilder()
-                    .setAccentColor(container.accentColor || 0x888888)
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(titleText)
                     )
