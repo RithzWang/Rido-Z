@@ -53,9 +53,9 @@ module.exports = {
             }
 
             let feedbackText = [];
-            if (added.length > 0) feedbackText.push(`<:yes:1528709597647470615> **ADDED:** ${added.join(', ')}`);
-            if (removed.length > 0) feedbackText.push(`<:no:1528709599740559415> **REMOVED:** ${removed.join(', ')}`);
-            if (failed.length > 0) feedbackText.push(`<:no:1528709599740559415> **FAILED:** ${failed.join(', ')}`);
+            if (added.length > 0) feedbackText.push(`<:yes:1528709597647470615> **Added:** ${added.join(', ')}`);
+            if (removed.length > 0) feedbackText.push(`<:no:1528709599740559415> **Removed:** ${removed.join(', ')}`);
+            if (failed.length > 0) feedbackText.push(`<:no:1528709599740559415> **Failed:** ${failed.join(', ')}`);
             
             if (feedbackText.length === 0) feedbackText.push('<:no:1528709599740559415> NO CHANGES MADE');
 
@@ -108,7 +108,7 @@ module.exports = {
                     if (isSingleMode) {
                         if (interaction.member.roles.cache.has(roleId)) {
                             await interaction.member.roles.remove(role);
-                            return interaction.reply({ content: `<:no:1528709599740559415> **REMOVED:** ${role.name}`, flags: MessageFlags.Ephemeral });
+                            return interaction.reply({ content: `<:no:1528709599740559415> **Removed:** ${role.name}`, flags: MessageFlags.Ephemeral });
                         }
                         
                         const rolesToRemove = [];
@@ -134,22 +134,22 @@ module.exports = {
                             const r = interaction.guild.roles.cache.get(rID);
                             if (r) { 
                                 await interaction.member.roles.remove(rID).catch(() => {}); 
-                                removedNames.push(r.name.toUpperCase()); 
+                                removedNames.push(r.name); 
                             }
                         }
                         
                         await interaction.member.roles.add(role);
-                        let msg = `<:yes:1528709597647470615> **ADDED:** ${role.name}`;
-                        if (removedNames.length > 0) msg += `\n<:no:1528709599740559415> **REMOVED:** ${removedNames.join(', ')}`;
+                        let msg = `<:yes:1528709597647470615> **Added:** ${role.name}`;
+                        if (removedNames.length > 0) msg += `\n<:no:1528709599740559415> **Removed:** ${removedNames.join(', ')}`;
                         return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
 
                     } else {
                         if (interaction.member.roles.cache.has(roleId)) {
                             await interaction.member.roles.remove(role);
-                            return interaction.reply({ content: `<:no:1528709599740559415> **REMOVED:** ${role.name}`, flags: MessageFlags.Ephemeral });
+                            return interaction.reply({ content: `<:no:1528709599740559415> **Removed:** ${role.name}`, flags: MessageFlags.Ephemeral });
                         } else {
                             await interaction.member.roles.add(role);
-                            return interaction.reply({ content: `<:yes:1528709597647470615> **ADDED:** ${role.name}`, flags: MessageFlags.Ephemeral });
+                            return interaction.reply({ content: `<:yes:1528709597647470615> **Added:** ${role.name}`, flags: MessageFlags.Ephemeral });
                         }
                     }
                 } catch (error) {
