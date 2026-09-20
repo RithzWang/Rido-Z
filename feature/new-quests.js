@@ -15,7 +15,7 @@ module.exports = {
     once: false,
     async execute(message) {
         // 1. Listen for the datamining webhook in your hidden channel
-        if (message.channelId !== '878582788608122900' || !message.webhookId) return;
+        if (message.channelId !== '920516326978641981' || !message.webhookId) return;
 
         // 2. Extract the raw embed data from the webhook
         const questEmbed = message.embeds[0];
@@ -79,10 +79,10 @@ module.exports = {
             );
 
         // 5. Have your bot send the final UI to your public server channel
-        const publicChannel = message.client.channels.cache.get('YOUR_PUBLIC_CHANNEL_ID');
+        const publicChannel = message.client.channels.cache.get('878582788608122900');
         if (publicChannel) {
             await publicChannel.send({
-                content: `🎯 <@&QUEST_ROLE_ID>`,
+                // content: `🎯 <@&QUEST_ROLE_ID>`,
                 components: [container]
             });
         }
