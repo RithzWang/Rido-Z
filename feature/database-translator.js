@@ -26,10 +26,6 @@ module.exports = async (message) => {
 
         if (!channelLang) return false;
 
-        // Trigger the typing indicator before making the OpenAI API call.
-        // The .catch() ensures the bot doesn't crash if it lacks typing permissions in a specific channel.
-        await message.channel.sendTyping().catch(() => {});
-
         const text = message.content.trim();
         let systemPrompt = "";
 
@@ -75,6 +71,8 @@ BEHAVIOR:
             if (result === "SKIP") {
                 return false; 
             } else if (result.startsWith("EN:")) {
+                await message.channel.sendTyping().catch(() => {});
+                
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
                     content: `-# **TRANSLATED FROM __ARABIC__:**\n${finalTranslation}\n-# - AI translation is not 100% accurate`, 
@@ -82,6 +80,8 @@ BEHAVIOR:
                     allowedMentions: { repliedUser: false } 
                 });
             } else if (result.startsWith("AR:")) {
+                await message.channel.sendTyping().catch(() => {});
+                
                 const finalTranslation = result.substring(3).trim();
                 await message.reply({ 
                     content: `-# **مترجم من __الإنجليزية__:**\n${finalTranslation}\n-# - الترجمة AI ليست دقيقة 100%`, 
@@ -155,7 +155,6 @@ SRC: [Source language name translated into ${setting.name}]
 
             if (lines.length >= 2) {
                 const firstLine = lines.shift(); 
-                // Added .toUpperCase() back so English and Spanish channel labels are capitalized
                 detectedLang = firstLine.replace(/^SRC:\s*/i, '').trim().toUpperCase();
                 translatedText = lines.join('\n').trim();
             } else {
@@ -167,6 +166,9 @@ SRC: [Source language name translated into ${setting.name}]
 
             // 3. If it detected the source is the exact same language as the channel target, abort.
             if (detectedLang.toLowerCase() === setting.name.toLowerCase()) return false; 
+
+            // Trigger typing indicator ONLY if we are definitively sending a translation
+            await message.channel.sendTyping().catch(() => {});
 
             const finalHeader = setting.header.replace('{LANG}', detectedLang);
 
