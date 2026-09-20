@@ -18,7 +18,6 @@ const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
 const youtubeTracker = require('./feature/youtube-track.js');
-const newQuests = require('./feature/new-quests.js');
 
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
@@ -196,7 +195,6 @@ client.once('clientReady', async () => {
     // ==========================================
     youtubeTracker(client);
     
-    newQuests(client);
 
 }); // 👈 This closing bracket finishes the clientReady block
 
