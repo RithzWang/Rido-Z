@@ -15,7 +15,7 @@ const TwitterDB = require('../../../schema/twitterSchema');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('twitter-post')
+        .setName('twt-post')
         .setDescription('Manage automated Twitter/X announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
