@@ -67,36 +67,6 @@ module.exports = {
         // ===============================================
         else if (interaction.isButton()) {
 
-            // --- A. LEGACY ROLE BUTTONS (role_ID_MODE) ---
-            if (interaction.customId.startsWith('role_')) {
-                const parts = interaction.customId.split('_');
-                const roleId = parts[1];
-                const mode = parts[2] || '0';
-                const role = interaction.guild.roles.cache.get(roleId);
-
-                if (!role) return interaction.reply({ content: '<:no:1528709599740559415> ROLE NOT FOUND', flags: MessageFlags.Ephemeral });
-
-                const hasRole = interaction.member.roles.cache.has(roleId);
-                try {
-                    if (mode === '1') {
-                        if (hasRole) return interaction.reply({ content: `<:no:1528709599740559415> ALREADY VERIFIED`, flags: MessageFlags.Ephemeral });
-                        await interaction.member.roles.add(role);
-                        return interaction.reply({ content: `<:yes:1528709597647470615> **VERIFIED AS** ${role.name.toUpperCase()}`, flags: MessageFlags.Ephemeral });
-                    } else {
-                        if (hasRole) {
-                            await interaction.member.roles.remove(role);
-                            return interaction.reply({ content: `<:no:1528709599740559415> **REMOVED** ${role.name.toUpperCase()}`, flags: MessageFlags.Ephemeral });
-                        } else {
-                            await interaction.member.roles.add(role);
-                            return interaction.reply({ content: `<:yes:1528709597647470615> **ADDED** ${role.name.toUpperCase()}`, flags: MessageFlags.Ephemeral });
-                        }
-                    }
-                } catch (e) {
-                    return interaction.reply({ content: "<:no:1528709599740559415> I CANNOT MANAGE THIS ROLE", flags: MessageFlags.Ephemeral });
-                }
-            }
-
-            // --- B. STANDARD & RESTRICTED ROLE BUTTONS ---
             const isStdMulti = interaction.customId.startsWith('btn_role_');
             const isStdSingle = interaction.customId.startsWith('btn_single_');
             const isRestrictedMulti = interaction.customId.startsWith('btn_r_');
