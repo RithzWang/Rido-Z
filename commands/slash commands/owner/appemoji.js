@@ -125,7 +125,7 @@ module.exports = {
         }
 
         // ===============================================
-        // 3. LIST EMOJIS (V2 COMPONENTS & PAGINATION)
+        // 3. LIST EMOJIS
         // ===============================================
         else if (sub === 'list') {
             try {
@@ -134,10 +134,11 @@ module.exports = {
                     return interaction.editReply({ content: `<:no:1528709599740559415> THIS BOT HAS 0 APPLICATION EMOJIS` });
                 }
 
-                // Format: (emoji) `emoji_id`
-                const emojiList = Array.from(fetchedEmojis.values()).map(e => 
-                    `<${e.animated ? 'a' : ''}:${e.name}:${e.id}> \`${e.id}\``
-                );
+                // Format: (emoji) `<:name:id>`
+                const emojiList = Array.from(fetchedEmojis.values()).map(e => {
+                    const tag = `<${e.animated ? 'a' : ''}:${e.name}:${e.id}>`;
+                    return `${tag} \`${tag}\``;
+                });
 
                 let currentPage = 0;
                 const itemsPerPage = 100;
@@ -152,47 +153,44 @@ module.exports = {
                             new TextDisplayBuilder().setContent(`### APP EMOJIS (${fetchedEmojis.size} Total | Page ${pageIndex + 1}/${maxPages})`) 
                         );
 
-                    // Chunk the 100 items so we don't exceed Discord's text limits per block
                     let currentString = "";
                     for (const item of currentItems) {
-                        // Keep each text block safely under 1900 chars
-                        if (currentString.length + item.length + 5 > 1900) {
+                        // Keep text blocks safely under Discord's 2000 character limit
+                        if (currentString.length + item.length + 2 > 1900) {
                             container.addTextDisplayComponents(new TextDisplayBuilder().setContent(currentString.trim()));
                             currentString = "";
                         }
-                        currentString += item + "   "; 
+                        currentString += item + "\n"; 
                     }
                     if (currentString) {
                         container.addTextDisplayComponents(new TextDisplayBuilder().setContent(currentString.trim()));
                     }
 
-                    // Only add pagination row if there are multiple pages
-                    if (maxPages > 1) {
-                        const actionRow = new ActionRowBuilder().addComponents(
-                            new ButtonBuilder()
-                                .setCustomId("emoji_first")
-                                .setStyle(ButtonStyle.Primary)
-                                .setLabel("First")
-                                .setDisabled(pageIndex === 0),
-                            new ButtonBuilder()
-                                .setCustomId("emoji_prev")
-                                .setStyle(ButtonStyle.Secondary)
-                                .setLabel("Previous")
-                                .setDisabled(pageIndex === 0),
-                            new ButtonBuilder()
-                                .setCustomId("emoji_next")
-                                .setStyle(ButtonStyle.Secondary)
-                                .setLabel("Next")
-                                .setDisabled(pageIndex === maxPages - 1),
-                            new ButtonBuilder()
-                                .setCustomId("emoji_last")
-                                .setStyle(ButtonStyle.Primary)
-                                .setLabel("Last")
-                                .setDisabled(pageIndex === maxPages - 1)
-                        );
-                        container.addActionRowComponents(actionRow);
-                    }
-
+                    // Add YouTube style pagination buttons
+                    const actionRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId("emoji_first")
+                            .setStyle(ButtonStyle.Primary)
+                            .setLabel("First")
+                            .setDisabled(pageIndex === 0),
+                        new ButtonBuilder()
+                            .setCustomId("emoji_prev")
+                            .setStyle(ButtonStyle.Secondary)
+                            .setLabel("Previous")
+                            .setDisabled(pageIndex === 0),
+                        new ButtonBuilder()
+                            .setCustomId("emoji_next")
+                            .setStyle(ButtonStyle.Secondary)
+                            .setLabel("Next")
+                            .setDisabled(pageIndex === maxPages - 1),
+                        new ButtonBuilder()
+                            .setCustomId("emoji_last")
+                            .setStyle(ButtonStyle.Primary)
+                            .setLabel("Last")
+                            .setDisabled(pageIndex === maxPages - 1)
+                    );
+                    
+                    container.addActionRowComponents(actionRow);
                     return container;
                 };
 
