@@ -7,28 +7,25 @@ const {
     SeparatorBuilder, 
     SeparatorSpacingSize, 
     ThumbnailBuilder, 
-    SectionBuilder 
+    SectionBuilder,
+    MessageFlags
 } = require('discord.js');
 
-module.exports = {
-    name: Events.MessageCreate,
-    once: false,
-    async execute(message) {
-        // 1. Listen for the datamining webhook in your hidden channel
+module.exports = (client) => {
+    client.on(Events.MessageCreate, async (message) => {
+        // Only listen to the hidden channel where the webhook posts
         if (message.channelId !== '920516326978641981' || !message.webhookId) return;
 
-        // 2. Extract the raw embed data from the webhook
         const questEmbed = message.embeds[0];
         if (!questEmbed) return;
 
-        // 3. Map the data to variables
-        const questTitle = questEmbed.title || "Unknown Quest";
+        // Extract whatever data the webhook provides (adjust these based on the actual webhook)
+        const questTitle = questEmbed.title || "New Quest";
         const questUrl = questEmbed.url || "https://discord.com/quests";
-        const questThumbnailUrl = questEmbed.image?.url || questEmbed.thumbnail?.url || "https://example.com/fallback.png";
+        const questThumbnailUrl = questEmbed.image?.url || questEmbed.thumbnail?.url || "https://discord.com/assets/favicon.ico";
         const questDescription = questEmbed.description || "Complete the required tasks in-game.";
-        const questId = "1234567890"; // You would extract this from the embed text
-
-        // 4. Build your custom Component V2 Layout
+        
+        // Build the V2 layout you requested
         const container = new ContainerBuilder()
             .addTextDisplayComponents(
                 new TextDisplayBuilder().setContent(`## New Quest - [${questTitle}](<${questUrl}>)`)
@@ -42,13 +39,13 @@ module.exports = {
                 new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
             )
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`# Quest Info\n**Duration**: (timestamp) - (timestamp)\n**Redeemable Platform**: PC / Console\n**Game**: ${questTitle}\n**Application**: [App](<link>) ( \`id\` )\n**Features**: In-Game Tracking`)
+                new TextDisplayBuilder().setContent(`# Quest Info\n**Duration**: (timestamp) - (timestamp)\n**Redeemable Platform**: PC/Console\n**Game**: ${questTitle}\n**Application**: [App](<link>) ( \`id\` )\n**Features**: In-Game Tracking`)
             )
             .addSeparatorComponents(
                 new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
             )
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`# Tasks\nYou must complete the following tasks\n${questDescription}`)
+                new TextDisplayBuilder().setContent(`# Tasks\nYou must complete the following tasks:\n${questDescription}`)
             )
             .addSeparatorComponents(
                 new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
@@ -56,35 +53,27 @@ module.exports = {
             .addSectionComponents(
                 new SectionBuilder()
                     .setThumbnailAccessory(
-                        new ThumbnailBuilder().setURL("https://example.com/reward_icon.png")
+                        new ThumbnailBuilder().setURL("https://example.com/reward.png") // Replace with actual reward thumbnail
                     )
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent("# Rewards"),
-                        new TextDisplayBuilder().setContent("**Reward Type**: In-App Item\n**SKU ID**: \`sku_id_here\`\n**Name**: Exclusive Reward")
+                        new TextDisplayBuilder().setContent("**Reward Type**: In-App Item\n**SKU ID**: \`sku_id\`\n**Name**: Reward Name\n**Orbs Amount**: 0")
                     )
-            )
-            .addSeparatorComponents(
-                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
-            )
-            .addMediaGalleryComponents(
-                new MediaGalleryBuilder().addItems(
-                    new MediaGalleryItemBuilder().setURL("https://example.com/watch_video_thumbnail.png") // If applicable
-                )
             )
             .addSeparatorComponents(
                 new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true)
             )
             .addTextDisplayComponents(
-                new TextDisplayBuilder().setContent(`Quest _ID_: \`${questId}\``)
+                new TextDisplayBuilder().setContent("Quest _ID_: `quest_id`")
             );
 
-        // 5. Have your bot send the final UI to your public server channel
         const publicChannel = message.client.channels.cache.get('878582788608122900');
         if (publicChannel) {
             await publicChannel.send({
-                content: `🎯 <@&QUEST_ROLE_ID>`,
-                components: [container]
+                // content: `🎯 <@&QUEST_ROLE_ID>`,
+                components: [container],
+                flags: [MessageFlags.IsComponentsV2] // Required for V2 layouts
             });
         }
-    }
+    });
 };
