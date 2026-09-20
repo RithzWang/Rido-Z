@@ -44,8 +44,8 @@ module.exports = {
         .addSubcommand(sub => {
             sub.setName('add')
                 .setDescription('Add roles to an EXISTING menu')
-                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID').setRequired(true))
                 .addRoleOption(opt => opt.setName('role1').setDescription('Role 1 to add').setRequired(true))
+                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID (Optional, finds latest if omitted)'))
                 .addChannelOption(opt => opt.setName('channel')
                     .setDescription('Channel where the menu is')
                     .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread))
@@ -62,8 +62,8 @@ module.exports = {
         .addSubcommand(sub => {
             sub.setName('remove')
                 .setDescription('Remove roles from an EXISTING menu')
-                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID').setRequired(true))
                 .addRoleOption(opt => opt.setName('role1').setDescription('Role 1 to remove').setRequired(true))
+                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID (Optional, finds latest if omitted)'))
                 .addChannelOption(opt => opt.setName('channel')
                     .setDescription('Channel where the menu is')
                     .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread));
@@ -78,7 +78,7 @@ module.exports = {
         .addSubcommand(sub => 
             sub.setName('refresh')
                 .setDescription('Update role names and optionally the title')
-                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID').setRequired(true))
+                .addStringOption(opt => opt.setName('message_id').setDescription('The Message ID (Optional, finds latest if omitted)'))
                 .addChannelOption(opt => opt.setName('channel')
                     .setDescription('Channel where the menu is')
                     .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement, ChannelType.PublicThread, ChannelType.PrivateThread))
@@ -88,7 +88,6 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-        // Check permissions just in case
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.editReply({ 
                 content: '<:no:1528709599740559415> YOU DO NOT HAVE PERMISSION TO DO THAT' 
@@ -140,7 +139,6 @@ module.exports = {
                 ? `Select one or multiple roles` 
                 : `Select one out of ${validRoleCount} roles`);
 
-            // --- BUILD CONTAINER ---
             const container = new ContainerBuilder()
                 .addTextDisplayComponents(
                     new TextDisplayBuilder().setContent(`### ${title}`)
@@ -181,20 +179,27 @@ module.exports = {
         // ===============================================
         else {
             const msgId = interaction.options.getString('message_id');
+            let message;
 
             try {
-                const message = await targetChannel.messages.fetch(msgId);
+                // Smart Fallback: Fetch last bot message if no ID is provided
+                if (msgId) {
+                    message = await targetChannel.messages.fetch(msgId);
+                } else {
+                    const recentMessages = await targetChannel.messages.fetch({ limit: 30 });
+                    message = recentMessages.find(m => m.author.id === interaction.client.user.id && m.components.length > 0);
+                    if (!message) {
+                        return interaction.editReply({ content: '<:no:1528709599740559415> COULD NOT FIND A RECENT MENU IN THAT CHANNEL. PLEASE PROVIDE A MESSAGE ID.' });
+                    }
+                }
+
                 const container = message.components[0];
-                
-                // Extract Text & Components Safely
                 const textComponents = container.components.filter(c => typeof c.content === 'string');
                 
                 let titleText = textComponents[0]?.content || "### Menu";
                 const existingBody = textComponents[1]?.content || ""; 
-                
                 let currentBodyLines = existingBody ? existingBody.split('\n') : [];
 
-                // Find Menu Row
                 let menuRow;
                 container.components.forEach(comp => {
                     if (comp.type === 1 && comp.components[0].type === 3) {
@@ -206,7 +211,6 @@ module.exports = {
 
                 const newMenu = StringSelectMenuBuilder.from(menuRow.components[0]);
 
-                // --- ADD ---
                 if (sub === 'add') {
                     for (let i = 1; i <= 5; i++) {
                         const role = interaction.options.getRole(`role${i}`);
@@ -220,8 +224,6 @@ module.exports = {
                         }
                     }
                 } 
-                
-                // --- REMOVE ---
                 else if (sub === 'remove') {
                     for (let i = 1; i <= 5; i++) {
                         const role = interaction.options.getRole(`role${i}`);
@@ -234,13 +236,9 @@ module.exports = {
                         }
                     }
                 }
-
-                // --- REFRESH ---
                 else if (sub === 'refresh') {
                     const newTitle = interaction.options.getString('new_title');
-                    if (newTitle) {
-                        titleText = `### ${newTitle}`;
-                    }
+                    if (newTitle) titleText = `### ${newTitle}`;
 
                     const updatedOptions = [];
                     const newDescriptionLines = [];
@@ -261,7 +259,6 @@ module.exports = {
                     currentBodyLines = newDescriptionLines;
                 }
 
-                // Update Menu Max Values
                 const isMultiSelect = newMenu.data.max_values > 1; 
                 const newCount = newMenu.options.length;
                 if (newCount > 0) {
@@ -271,7 +268,6 @@ module.exports = {
                     return interaction.editReply({ content: "<:no:1528709599740559415> CANNOT UPDATE MENU: IT WOULD BE EMPTY" });
                 }
 
-                // --- REBUILD CONTAINER ---
                 const newContainer = new ContainerBuilder()
                     .addTextDisplayComponents(
                         new TextDisplayBuilder().setContent(titleText)
