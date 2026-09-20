@@ -22,6 +22,7 @@ const youtubeTracker = require('./feature/youtube-track.js');
 // 👇 Import your new unified Database Translator, Chatbot, and Status Manager
 const databaseTranslator = require('./feature/database-translator.js');
 const personaChatbot = require('./feature/chatbot.js'); 
+const newQuestsTracker = require('./feature/new-quests.js');
 
 // Keep your hosting ping script if you use services like Replit/UptimeRobot
 require('./keep_alive.js');
@@ -194,6 +195,7 @@ client.once('clientReady', async () => {
     // START YOUTUBE BACKGROUND CHECKER
     // ==========================================
     youtubeTracker(client);
+    newQuestsTracker(client);
     
 
 }); // 👈 This closing bracket finishes the clientReady block
