@@ -95,7 +95,7 @@ module.exports = {
         try {
             targetChannel = await interaction.guild.channels.fetch(targetChannel.id);
 
-            if (subcommand === 'send') {
+            if (subcommand === 'create') {
                 await targetChannel.send(payload);
                 await interaction.editReply({ 
                     content: `<:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` 
