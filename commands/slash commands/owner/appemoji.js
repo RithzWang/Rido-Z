@@ -134,9 +134,9 @@ module.exports = {
                     return interaction.editReply({ content: `<:no:1528709599740559415> THIS BOT HAS 0 APPLICATION EMOJIS` });
                 }
 
-                // Format: (emoji) `emoji_name`
+                // Format: (emoji) `emoji_id`
                 const emojiList = Array.from(fetchedEmojis.values()).map(e => 
-                    `<${e.animated ? 'a' : ''}:${e.name}:${e.id}> \`${e.name}\``
+                    `<${e.animated ? 'a' : ''}:${e.name}:${e.id}> \`${e.id}\``
                 );
 
                 let currentPage = 0;
