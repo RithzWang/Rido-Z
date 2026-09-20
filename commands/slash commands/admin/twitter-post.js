@@ -15,7 +15,7 @@ const TwitterDB = require('../../../schema/twitterSchema');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('twt-post')
+        .setName('twt')
         .setDescription('Manage automated Twitter/X announcements')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand(subcommand =>
@@ -94,16 +94,23 @@ module.exports = {
             if (!BEARER_TOKEN) return interaction.editReply("Bot Owner needs to set `TWITTER_BEARER_TOKEN` in the `.env` file.");
 
             let twitterId, exactHandle, lastTweetId;
-            try {
+                        try {
+                // 👇 Debugging: Let's see what username the bot is actually searching for
+                console.log(`[Twitter Debug] Attempting to search for username: "${username}"`);
+
                 // 1. Get User ID by Username
                 const userRes = await fetch(`https://api.twitter.com/2/users/by/username/${username}`, {
                     headers: { 'Authorization': `Bearer ${BEARER_TOKEN}` }
                 });
                 const userData = await userRes.json();
 
+                // 👇 Debugging: Let's print EXACTLY what Twitter replied with!
+                console.log(`[Twitter Debug] API Response:`, userData);
+
                 if (userData.errors || !userData.data) {
                     return interaction.editReply(`<:no:1528709599740559415> COULD NOT FIND THAT TWITTER ACCOUNT. Ensure the handle is correct.`);
                 }
+
 
                 twitterId = userData.data.id;
                 exactHandle = userData.data.username;
