@@ -9,10 +9,10 @@ const {
     MediaGalleryItemBuilder
 } = require('discord.js');
 
-// Helper function to easily apply up to 10 attachments and shared options
+// Helper function to apply optional text, channel, and 10 attachments
 const setupMessageOptions = (subcommand, type = 'create') => {
-    // If it's edit or reply, we require a message ID first
-    if (type === 'edit' || type === 'reply') {
+    // If it's edit or reply, require a message ID first
+    if (type.includes('edit') || type.includes('reply')) {
         subcommand.addStringOption(opt => opt.setName('message_id').setDescription('Message ID').setRequired(true));
     }
     
@@ -58,11 +58,15 @@ module.exports = {
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         
-        // --- MESSAGE SUBCOMMANDS (Using Helper) ---
-        .addSubcommand(sub => setupMessageOptions(sub.setName('create').setDescription('Create a message'), 'create'))
-        .addSubcommand(sub => setupMessageOptions(sub.setName('edit').setDescription('Edit a message'), 'edit'))
-        .addSubcommand(sub => setupMessageOptions(sub.setName('reply').setDescription('Reply to a message'), 'reply'))
+        // --- STANDARD MESSAGE SUBCOMMANDS ---
+        .addSubcommand(sub => setupMessageOptions(sub.setName('create').setDescription('Create a standard message'), 'create'))
+        .addSubcommand(sub => setupMessageOptions(sub.setName('edit').setDescription('Edit a standard message'), 'edit'))
+        .addSubcommand(sub => setupMessageOptions(sub.setName('reply').setDescription('Reply to a standard message'), 'reply'))
+        
+        // --- CONTAINER SUBCOMMANDS ---
         .addSubcommand(sub => setupMessageOptions(sub.setName('container').setDescription('Send a message in a container'), 'create'))
+        .addSubcommand(sub => setupMessageOptions(sub.setName('edit-container').setDescription('Edit a container message'), 'edit'))
+        .addSubcommand(sub => setupMessageOptions(sub.setName('reply-container').setDescription('Reply with a container message'), 'reply'))
 
         // --- REACT SUBCOMMAND ---
         .addSubcommand(sub => sub.setName('react').setDescription('Add reactions to a message')
@@ -100,7 +104,9 @@ module.exports = {
             targetChannel = await interaction.guild.channels.fetch(targetChannel.id);
 
             // ==================== CREATE / EDIT / REPLY / CONTAINER ====================
-            if (['create', 'edit', 'reply', 'container'].includes(subcommand)) {
+            const messageCommands = ['create', 'edit', 'reply', 'container', 'edit-container', 'reply-container'];
+            
+            if (messageCommands.includes(subcommand)) {
                 const content = interaction.options.getString('content');
                 const shouldMention = interaction.options.getBoolean('mention') ?? true; 
                 const imageLink = interaction.options.getString('image_link');
@@ -123,11 +129,12 @@ module.exports = {
                 const allowedMentions = shouldMention ? { parse: ['users', 'roles', 'everyone'] } : { parse: [] };
                 let payload = {};
 
-                if (subcommand === 'container') {
+                // Apply flags and components if it is ANY of the container subcommands
+                if (subcommand.includes('container')) {
                     payload = {
                         components: buildContainerComponents(content, attachments),
                         allowedMentions: allowedMentions,
-                        flags: MessageFlags.IsComponentsV2 
+                        flags: MessageFlags.IsComponentsV2 // <-- SAFETY FLAG APPLIED HERE
                     };
                 } else {
                     payload = { allowedMentions };
@@ -135,12 +142,12 @@ module.exports = {
                     if (attachments.length > 0) payload.files = attachments;
                 }
 
-                // Execute based on specific subcommand
-                if (subcommand === 'create') {
+                // --- Execute Specific Action ---
+                if (subcommand === 'create' || subcommand === 'container') {
                     await targetChannel.send(payload);
                     await interaction.editReply({ content: `<:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` });
                 } 
-                else if (subcommand === 'edit') {
+                else if (subcommand === 'edit' || subcommand === 'edit-container') {
                     const messageId = interaction.options.getString('message_id');
                     const messageToEdit = await targetChannel.messages.fetch(messageId);
 
@@ -151,16 +158,12 @@ module.exports = {
                     await messageToEdit.edit(payload);
                     await interaction.editReply({ content: `<:yes:1528709597647470615> MESSAGE HAS BEEN **EDITED**` });
                 }
-                else if (subcommand === 'reply') {
+                else if (subcommand === 'reply' || subcommand === 'reply-container') {
                     const messageId = interaction.options.getString('message_id');
                     const targetMessage = await targetChannel.messages.fetch(messageId);
                     
                     await targetMessage.reply(payload);
                     await interaction.editReply({ content: `<:yes:1528709597647470615> REPLIED TO THE MESSAGE` });
-                }
-                else if (subcommand === 'container') {
-                    await targetChannel.send(payload);
-                    await interaction.editReply({ content: `<:yes:1528709597647470615> CONTAINER SENT TO ${targetChannel}` });
                 }
             }
             
