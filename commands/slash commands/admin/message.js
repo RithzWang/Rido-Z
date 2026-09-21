@@ -64,7 +64,7 @@ module.exports = {
         .addSubcommand(sub => setupMessageOptions(sub.setName('reply').setDescription('Reply to a standard message'), 'reply'))
         
         // --- CONTAINER SUBCOMMANDS ---
-        .addSubcommand(sub => setupMessageOptions(sub.setName('container').setDescription('Send a message in a container'), 'create'))
+        .addSubcommand(sub => setupMessageOptions(sub.setName('create-container').setDescription('Send a message in a container'), 'create'))
         .addSubcommand(sub => setupMessageOptions(sub.setName('edit-container').setDescription('Edit a container message'), 'edit'))
         .addSubcommand(sub => setupMessageOptions(sub.setName('reply-container').setDescription('Reply with a container message'), 'reply'))
 
@@ -104,7 +104,7 @@ module.exports = {
             targetChannel = await interaction.guild.channels.fetch(targetChannel.id);
 
             // ==================== CREATE / EDIT / REPLY / CONTAINER ====================
-            const messageCommands = ['create', 'edit', 'reply', 'container', 'edit-container', 'reply-container'];
+            const messageCommands = ['create', 'edit', 'reply', 'create-container', 'edit-container', 'reply-container'];
             
             if (messageCommands.includes(subcommand)) {
                 const content = interaction.options.getString('content');
@@ -134,7 +134,7 @@ module.exports = {
                     payload = {
                         components: buildContainerComponents(content, attachments),
                         allowedMentions: allowedMentions,
-                        flags: MessageFlags.IsComponentsV2 // <-- SAFETY FLAG APPLIED HERE
+                        flags: MessageFlags.IsComponentsV2
                     };
                 } else {
                     payload = { allowedMentions };
@@ -143,7 +143,7 @@ module.exports = {
                 }
 
                 // --- Execute Specific Action ---
-                if (subcommand === 'create' || subcommand === 'container') {
+                if (subcommand === 'create' || subcommand === 'create-container') {
                     await targetChannel.send(payload);
                     await interaction.editReply({ content: `<:yes:1528709597647470615> MESSAGE SENT TO ${targetChannel}` });
                 } 
