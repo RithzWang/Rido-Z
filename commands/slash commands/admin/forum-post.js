@@ -116,6 +116,7 @@ module.exports = {
 
                 if (subcommand === 'create-container') {
                     messagePayload.components = buildContainerComponents(messageText, attachments);
+                    messagePayload.flags = MessageFlags.IsComponentsV2; // <-- ADDED MISSING FLAG
                 } else {
                     if (messageText) messagePayload.content = messageText;
                     if (attachments.length > 0) messagePayload.files = attachments.map(a => a.url);
@@ -180,6 +181,7 @@ module.exports = {
                             newMessage || starterMessage.content, 
                             attachments
                         );
+                        messagePayload.flags = MessageFlags.IsComponentsV2; // <-- ADDED MISSING FLAG
                     } else {
                         if (newMessage) messagePayload.content = newMessage;
                         if (attachments.length > 0) messagePayload.files = attachments.map(a => a.url);
