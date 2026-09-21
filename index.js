@@ -194,7 +194,6 @@ client.once('clientReady', async () => {
     // START YOUTUBE BACKGROUND CHECKER
     // ==========================================
     youtubeTracker(client);
-    newQuestsTracker(client);
     
 
 }); // 👈 This closing bracket finishes the clientReady block
