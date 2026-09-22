@@ -44,7 +44,10 @@ module.exports = {
             const isBypassUser = config?.bypassedUsers.includes(member.id);
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
-                return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
+                return interaction.reply({ 
+                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", 
+                    flags: MessageFlags.Ephemeral 
+                });
             }
 
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
@@ -83,8 +86,7 @@ module.exports = {
 
             return interaction.reply({ 
                 components: styleSelectorComponents, 
-                flags: MessageFlags.IsComponentsV2,
-                ephemeral: true 
+                flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral]
             });
         }
 
