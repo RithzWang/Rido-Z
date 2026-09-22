@@ -28,7 +28,6 @@ async function checkEnhancedRolePerk(guild) {
     }
 }
 
-// Helper function to build and display the modal for both Solid and Gradient
 async function sendRoleModal(interaction, style) {
     const isGradient = style === 'gradient';
     const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
@@ -84,7 +83,7 @@ module.exports = {
     async execute(interaction) {
         
         // 1. --- MANAGE CUSTOM ROLE BUTTON HANDLER ---
-        if (interaction.isButton() && interaction.customId === '19d59d52506f46d7aeae1d22ab93ef1b') {
+        if (interaction.isButton() && interaction.customId === '2a064e6b81774bcf9c6a2778c5e0ac21') {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const member = interaction.member;
 
@@ -94,40 +93,43 @@ module.exports = {
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
                 return interaction.reply({ 
-                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", 
+                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", 
                     ephemeral: true 
                 });
             }
 
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
 
-            // If the server doesn't have the perk, bypass the menu and show the Solid modal immediately
             if (!hasEnhancedRoleStyle) {
                 return sendRoleModal(interaction, 'solid');
             }
 
-            // If they do have the perk, show the selection menu
             const styleSelectorComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Role Style"),
+                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Custom Style"),
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+                    )
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent("- **Solid**\n_You can pick one colour_\n- **Gradient **\n_You can pick two colours_"),
                     )
                     .addActionRowComponents(
                         new ActionRowBuilder()
                             .addComponents(
                                 new StringSelectMenuBuilder()
-                                    .setCustomId("dd9a64149d5a4124ea4e263fc2b09cc4")
+                                    .setCustomId("7961861e646f4b8f9acccc9767c973ff")
                                     .setPlaceholder("Solid & Gradient")
                                     .addOptions(
                                         new SelectMenuOptionBuilder()
                                             .setLabel("Solid")
-                                            .setValue("2279caf5311e4e05ae9c455b9c94eb6c"),
+                                            .setValue("3edc1c1c1bee48f6eac26b9555e5a408")
+                                            .setEmoji({ name: "1️⃣" }),
                                         new SelectMenuOptionBuilder()
                                             .setLabel("Gradient")
-                                            .setValue("4fa214a59b764902d1ee76040341a5f4")
+                                            .setValue("5ab448a89aa04452b6f1276f6853296c")
+                                            .setEmoji({ name: "2️⃣" })
                                     ),
                             ),
                     ),
@@ -140,12 +142,11 @@ module.exports = {
         }
 
         // 2. --- SELECT MENU HANDLER (OPENS MODAL) ---
-        if (interaction.isStringSelectMenu() && interaction.customId === 'dd9a64149d5a4124ea4e263fc2b09cc4') {
+        if (interaction.isStringSelectMenu() && interaction.customId === '7961861e646f4b8f9acccc9767c973ff') {
             const choice = interaction.values[0];
-            const isGradient = choice === '4fa214a59b764902d1ee76040341a5f4';
+            const isGradient = choice === '5ab448a89aa04452b6f1276f6853296c';
             const selectedStyle = isGradient ? 'gradient' : 'solid';
 
-            // Safe-guard in case the perk is removed while the menu is open
             if (isGradient) {
                 const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
                 if (!hasEnhancedRoleStyle) {
@@ -160,7 +161,7 @@ module.exports = {
         }
 
         // 3. --- DELETE BUTTON HANDLER ---
-        if (interaction.isButton() && interaction.customId === 'a32f08479fbd434d9fb0bcfc79811f02') {
+        if (interaction.isButton() && interaction.customId === 'a1e2a2b3a3044a5ab488f7d5e2558a8c') {
             await interaction.deferReply({ ephemeral: true });
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
