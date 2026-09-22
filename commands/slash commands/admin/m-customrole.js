@@ -14,7 +14,6 @@ const {
 const ConfigDB = require('../../../schema/CustomRoleConfig');
 
 module.exports = {
-    guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('m-customrole')
         .setDescription('Manage the custom role system')
@@ -49,15 +48,16 @@ module.exports = {
         let config = await ConfigDB.findOne({ guildId: interaction.guildId });
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
+        // Check if server has the required 3 boosts for Enhanced Role Styles
+        const hasEnhancedRoleStyle = interaction.guild.premiumSubscriptionCount >= 3;
+
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
-            const hasEnhancedRoleStyle = interaction.guild.features.includes('ROLE_ICONS');
-            
             const embed = new EmbedBuilder()
                 .setTitle('Custom Role Dashboard')
                 .setColor('#2b2d31')
                 .addFields(
-                    { name: 'Enhanced Perks (Gradient)', value: hasEnhancedRoleStyle ? '✅ Unlocked (Server Feature)' : '❌ Locked (Requires Server Perk)', inline: true },
+                    { name: 'Enhanced Perks (Gradient)', value: hasEnhancedRoleStyle ? '✅ Unlocked (3+ Boosts)' : '❌ Locked (Requires 3 Boosts)', inline: true },
                     { name: 'Global Disabled', value: config.globalDisabled ? '🔴 Yes (Disabled)' : '🟢 No (Active)', inline: true },
                     { name: 'Bypassed Roles', value: config.bypassedRoles.length > 0 ? config.bypassedRoles.map(id => `<@&${id}>`).join(', ') : 'None', inline: false },
                     { name: 'Bypassed Users', value: config.bypassedUsers.length > 0 ? config.bypassedUsers.map(id => `<@${id}>`).join(', ') : 'None', inline: false }
@@ -92,10 +92,20 @@ module.exports = {
             const isDisabled = subcommand === 'disable';
             config.globalDisabled = isDisabled;
 
+            // Build the Gradient Option dynamically based on perk availability
+            const gradientOption = new SelectMenuOptionBuilder()
+                .setLabel("Gradient")
+                .setValue("ba5a1daeadf14cff8d7e388e04921def");
+
+            if (!hasEnhancedRoleStyle) {
+                gradientOption.setDescription("Unlock new role styles with Boosting.");
+                gradientOption.setDisabled(true); 
+            }
+
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## <:role:1551900245653332048> Custom Role"))
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select A Role Style"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style Below"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new StringSelectMenuBuilder()
@@ -103,12 +113,14 @@ module.exports = {
                                 .setPlaceholder("Role Style")
                                 .setDisabled(isDisabled)
                                 .addOptions(
-                                    new SelectMenuOptionBuilder().setLabel("Solid").setValue("ed4cec44c7b34760d6e20bd187f2cb89"),
-                                    new SelectMenuOptionBuilder().setLabel("Gradient").setValue("ba5a1daeadf14cff8d7e388e04921def")
+                                    new SelectMenuOptionBuilder()
+                                        .setLabel("Solid")
+                                        .setValue("ed4cec44c7b34760d6e20bd187f2cb89"),
+                                    gradientOption // Insert the dynamically configured gradient option here
                                 )
                         )
                     )
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage A Custom Role"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage Custom Role"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new ButtonBuilder()
