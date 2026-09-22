@@ -11,7 +11,7 @@ const {
     SelectMenuOptionBuilder,
     MessageFlags
 } = require('discord.js');
-const ConfigDB = require('../../../schema/CustomRoleConfig');
+const ConfigDB = require('../../models/CustomRoleConfig');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,8 +25,6 @@ module.exports = {
             .addStringOption(opt => opt.setName('message_id').setDescription('Message ID to edit (optional)'))
         )
         .addSubcommand(sub => sub.setName('disable').setDescription('Disable the manage custom role button temporarily'))
-        .addSubcommand(sub => sub.setName('enable-gradient').setDescription('Enable the gradient style'))
-        .addSubcommand(sub => sub.setName('disable-gradient').setDescription('Disable the gradient style'))
         .addSubcommand(sub => {
             sub.setName('bypass').setDescription('Allow users/roles to bypass boost requirement');
             for (let i = 1; i <= 5; i++) {
@@ -52,23 +50,18 @@ module.exports = {
 
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
+            const hasEnhancedRoleStyle = interaction.guild.features.includes('ROLE_ICONS');
+            
             const embed = new EmbedBuilder()
                 .setTitle('Custom Role Dashboard')
                 .setColor('#2b2d31')
                 .addFields(
-                    { name: 'Gradient Status', value: config.gradientEnabled ? '✅ Enabled' : '❌ Disabled', inline: true },
+                    { name: 'Enhanced Perks (Gradient)', value: hasEnhancedRoleStyle ? '✅ Unlocked (Server Feature)' : '❌ Locked (Requires Server Perk)', inline: true },
                     { name: 'Global Disabled', value: config.globalDisabled ? '🔴 Yes (Disabled)' : '🟢 No (Active)', inline: true },
                     { name: 'Bypassed Roles', value: config.bypassedRoles.length > 0 ? config.bypassedRoles.map(id => `<@&${id}>`).join(', ') : 'None', inline: false },
                     { name: 'Bypassed Users', value: config.bypassedUsers.length > 0 ? config.bypassedUsers.map(id => `<@${id}>`).join(', ') : 'None', inline: false }
                 );
             return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-
-        // --- ENABLE/DISABLE GRADIENT ---
-        if (subcommand === 'enable-gradient' || subcommand === 'disable-gradient') {
-            config.gradientEnabled = (subcommand === 'enable-gradient');
-            await config.save();
-            return interaction.reply({ content: `Gradient style is now **${config.gradientEnabled ? 'ENABLED' : 'DISABLED'}**.`, ephemeral: true });
         }
 
         // --- BYPASS / DISBYPASS ---
@@ -101,7 +94,7 @@ module.exports = {
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## <:role:1551900245653332048> Custom Role"))
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style Below"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new StringSelectMenuBuilder()
