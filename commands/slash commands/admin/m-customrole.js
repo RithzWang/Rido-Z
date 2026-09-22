@@ -8,7 +8,8 @@ const {
     ButtonBuilder, 
     ButtonStyle, 
     ContainerBuilder,
-    SelectMenuOptionBuilder
+    SelectMenuOptionBuilder,
+    MessageFlags // <-- IMPORTED HERE
 } = require('discord.js');
 const ConfigDB = require('../../../schema/CustomRoleConfig');
 
@@ -126,7 +127,6 @@ module.exports = {
                     )
             ];
 
-            // If disabling, we try to edit the existing message we saved in the DB
             let channelId = interaction.options.getString('channel') || interaction.channelId;
             let messageId = interaction.options.getString('message_id') || (isDisabled ? config.panelMessageId : null);
             
@@ -136,7 +136,12 @@ module.exports = {
             if (messageId) {
                 try {
                     const msg = await targetChannel.messages.fetch(messageId);
-                    await msg.edit({ components: containerComponents });
+                    // ADDED FLAGS HERE
+                    await msg.edit({ 
+                        components: containerComponents, 
+                        flags: MessageFlags.IsComponentsV2 
+                    });
+                    
                     config.panelChannelId = targetChannel.id;
                     config.panelMessageId = msg.id;
                     await config.save();
@@ -146,11 +151,16 @@ module.exports = {
                 }
             }
 
-            // Send new message
-            const newMsg = await targetChannel.send({ components: containerComponents });
+            // ADDED FLAGS HERE FOR NEW MESSAGE
+            const newMsg = await targetChannel.send({ 
+                components: containerComponents,
+                flags: MessageFlags.IsComponentsV2
+            });
+            
             config.panelChannelId = targetChannel.id;
             config.panelMessageId = newMsg.id;
             await config.save();
+            
             return interaction.reply({ content: 'Panel sent successfully!', ephemeral: true });
         }
     }
