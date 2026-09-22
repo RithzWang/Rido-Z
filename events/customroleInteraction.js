@@ -44,7 +44,7 @@ module.exports = {
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
                 return interaction.reply({ 
-                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", 
+                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", 
                     flags: MessageFlags.Ephemeral 
                 });
             }
