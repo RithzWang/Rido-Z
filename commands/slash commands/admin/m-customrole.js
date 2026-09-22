@@ -111,7 +111,7 @@ module.exports = {
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Danger)
                                     .setLabel("Delete")
-                                    .setEmoji("551935964866150470")
+                                    .setEmoji("1551935964866150470") // Fixed emoji string as provided
                                     .setCustomId("a32f08479fbd434d9fb0bcfc79811f02")
                                     .setDisabled(isDisabled),
                             ),
