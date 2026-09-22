@@ -48,7 +48,6 @@ module.exports = {
         let config = await ConfigDB.findOne({ guildId: interaction.guildId });
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
-        // Check if server has the required 3 boosts for Enhanced Role Styles
         const hasEnhancedRoleStyle = interaction.guild.premiumSubscriptionCount >= 3;
 
         // --- DASHBOARD (DB) ---
@@ -92,16 +91,6 @@ module.exports = {
             const isDisabled = subcommand === 'disable';
             config.globalDisabled = isDisabled;
 
-            // Build the Gradient Option dynamically based on perk availability
-            const gradientOption = new SelectMenuOptionBuilder()
-                .setLabel("Gradient")
-                .setValue("ba5a1daeadf14cff8d7e388e04921def");
-
-            if (!hasEnhancedRoleStyle) {
-                gradientOption.setDescription("Unlock new role styles with Boosting.");
-                gradientOption.setDisabled(true); 
-            }
-
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## <:role:1551900245653332048> Custom Role"))
@@ -116,7 +105,9 @@ module.exports = {
                                     new SelectMenuOptionBuilder()
                                         .setLabel("Solid")
                                         .setValue("ed4cec44c7b34760d6e20bd187f2cb89"),
-                                    gradientOption // Insert the dynamically configured gradient option here
+                                    new SelectMenuOptionBuilder()
+                                        .setLabel("Gradient")
+                                        .setValue("ba5a1daeadf14cff8d7e388e04921def")
                                 )
                         )
                     )
