@@ -7,8 +7,8 @@ const {
     FileUploadBuilder, 
     LabelBuilder 
 } = require('discord.js');
-const ConfigDB = require('../models/CustomRoleConfig');
-const UserRoleDB = require('../models/CustomRoleUser');
+const ConfigDB = require('../schema/CustomRoleConfig');
+const UserRoleDB = require('../schema/CustomRoleUser');
 
 const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
