@@ -53,7 +53,7 @@ module.exports = {
             // 3. Builder
             const buildMessagePayload = async (isShowingGlobal, disableToggle = false) => {
                 const currentImageUrl = isShowingGlobal ? globalAvatar : displayAvatar;
-                const titleText = isShowingGlobal ? `## Profile Avatar` : `## Per-server Profile Avatar`;
+                const titleText = isShowingGlobal ? `## <:image:1551901191124947026> Profile Avatar` : `## <:image:1551901191124947026> Per-server Profile Avatar`;
                 
                 // 👇 UPDATED: Added `targetUser.username` in backticks
                 const bodyText = isShowingGlobal 
