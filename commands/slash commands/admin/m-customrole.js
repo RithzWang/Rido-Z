@@ -11,7 +11,7 @@ const {
     SelectMenuOptionBuilder,
     MessageFlags
 } = require('discord.js');
-const ConfigDB = require('../../models/CustomRoleConfig');
+const ConfigDB = require('../../.../schema/CustomRoleConfig');
 
 module.exports = {
     data: new SlashCommandBuilder()
