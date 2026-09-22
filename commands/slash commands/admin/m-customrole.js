@@ -11,8 +11,6 @@ const {
     ContainerBuilder,
     MessageFlags
 } = require('discord.js');
-
-// Make sure this path matches your folder structure! (schema vs models)
 const ConfigDB = require('../../../schema/CustomRoleConfig'); 
 
 module.exports = {
@@ -51,6 +49,7 @@ module.exports = {
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
         const hasEnhancedRoleStyle = interaction.guild.features?.includes('ENHANCED_ROLE_COLORS');
+        const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
 
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
@@ -93,6 +92,11 @@ module.exports = {
             const isDisabled = subcommand === 'disable';
             config.globalDisabled = isDisabled;
 
+            const gradientEmoji = hasEnhancedRoleStyle ? '<:yes:1551365722729484370>' : '<:no:1551365724314935296>';
+            const iconEmoji = hasRoleIcons ? '<:yes:1551365722729484370>' : '<:no:1551365724314935296>';
+
+            const featuresText = `<:yes:1551365722729484370> Choose your own role name\n<:yes:1551365722729484370> Set any custom [HEX](<https://share.google/Vengh8rGw8wb4ddvK>) colour\n${gradientEmoji} Unlock Gradients\n${iconEmoji} Unlock Custom Icons`;
+
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(
@@ -101,6 +105,9 @@ module.exports = {
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent(featuresText),
+                    )
                     .addActionRowComponents(
                         new ActionRowBuilder()
                             .addComponents(
@@ -108,13 +115,13 @@ module.exports = {
                                     .setStyle(ButtonStyle.Secondary)
                                     .setLabel("Manage Custom Role")
                                     .setEmoji("1551910425254432809")
-                                    .setCustomId("19d59d52506f46d7aeae1d22ab93ef1b")
+                                    .setCustomId("2a064e6b81774bcf9c6a2778c5e0ac21")
                                     .setDisabled(isDisabled),
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Danger)
                                     .setLabel("Delete")
-                                    .setEmoji("1551935964866150470") // <-- Fixed missing '1' in emoji ID
-                                    .setCustomId("a32f08479fbd434d9fb0bcfc79811f02")
+                                    .setEmoji("1551935964866150470")
+                                    .setCustomId("a1e2a2b3a3044a5ab488f7d5e2558a8c")
                                     .setDisabled(isDisabled),
                             ),
                     ),
