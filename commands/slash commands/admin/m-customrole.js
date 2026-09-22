@@ -9,7 +9,7 @@ const {
     ButtonStyle, 
     ContainerBuilder,
     SelectMenuOptionBuilder,
-    MessageFlags // <-- IMPORTED HERE
+    MessageFlags
 } = require('discord.js');
 const ConfigDB = require('../../../schema/CustomRoleConfig');
 
@@ -101,7 +101,7 @@ module.exports = {
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## <:role:1551900245653332048> Custom Role"))
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style Below"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new StringSelectMenuBuilder()
@@ -114,7 +114,7 @@ module.exports = {
                                 )
                         )
                     )
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage Your Custom Role"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage Custom Role"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new ButtonBuilder()
@@ -122,6 +122,12 @@ module.exports = {
                                 .setLabel("Manage Custom Role")
                                 .setEmoji("1551910425254432809")
                                 .setCustomId("786aa1a0fb134a6fb45d3723eefb9e01")
+                                .setDisabled(isDisabled),
+                            new ButtonBuilder()
+                                .setStyle(ButtonStyle.Danger)
+                                .setLabel("Delete")
+                                .setEmoji("1551935964866150470")
+                                .setCustomId("4e0779b652fa4ee2fcce65c32d8dbf30")
                                 .setDisabled(isDisabled)
                         )
                     )
@@ -136,7 +142,6 @@ module.exports = {
             if (messageId) {
                 try {
                     const msg = await targetChannel.messages.fetch(messageId);
-                    // ADDED FLAGS HERE
                     await msg.edit({ 
                         components: containerComponents, 
                         flags: MessageFlags.IsComponentsV2 
@@ -151,7 +156,6 @@ module.exports = {
                 }
             }
 
-            // ADDED FLAGS HERE FOR NEW MESSAGE
             const newMsg = await targetChannel.send({ 
                 components: containerComponents,
                 flags: MessageFlags.IsComponentsV2
