@@ -14,6 +14,7 @@ const {
 const ConfigDB = require('../../.../schema/CustomRoleConfig');
 
 module.exports = {
+    guildOnly: true,
     data: new SlashCommandBuilder()
         .setName('m-customrole')
         .setDescription('Manage the custom role system')
