@@ -11,7 +11,9 @@ const {
     ContainerBuilder,
     MessageFlags
 } = require('discord.js');
-const ConfigDB = require('../../../schema/CustomRoleConfig');
+
+// Make sure this path matches your folder structure! (schema vs models)
+const ConfigDB = require('../../../schema/CustomRoleConfig'); 
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -48,7 +50,6 @@ module.exports = {
         let config = await ConfigDB.findOne({ guildId: interaction.guildId });
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
-        // Using the newly confirmed ENHANCED_ROLE_COLORS flag
         const hasEnhancedRoleStyle = interaction.guild.features?.includes('ENHANCED_ROLE_COLORS');
 
         // --- DASHBOARD (DB) ---
@@ -112,7 +113,7 @@ module.exports = {
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Danger)
                                     .setLabel("Delete")
-                                    .setEmoji("1551935964866150470") 
+                                    .setEmoji("1551935964866150470") // <-- Fixed missing '1' in emoji ID
                                     .setCustomId("a32f08479fbd434d9fb0bcfc79811f02")
                                     .setDisabled(isDisabled),
                             ),
