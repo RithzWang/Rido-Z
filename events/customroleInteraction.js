@@ -36,7 +36,32 @@ module.exports = {
             }
         }
 
-        // 2. --- BUTTON HANDLER ---
+        // 2. --- DELETE BUTTON HANDLER ---
+        if (interaction.isButton() && interaction.customId === '4e0779b652fa4ee2fcce65c32d8dbf30') {
+            await interaction.deferReply({ ephemeral: true });
+
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+
+            if (!userRoleData) {
+                return interaction.editReply("<:no:1551365724314935296> YOU DON’T HAVE A CUSTOM ROLE YET");
+            }
+
+            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            if (targetRole) {
+                try {
+                    await targetRole.delete("User deleted their custom role via panel");
+                } catch (error) {
+                    console.error("Failed to delete role:", error);
+                }
+            }
+
+            // Remove from Database
+            await UserRoleDB.deleteOne({ guildId: interaction.guildId, userId: interaction.user.id });
+
+            return interaction.editReply("<:yes:1551365722729484370> SUCCESSFULLY DELETED YOUR CUSTOM ROLE!");
+        }
+
+        // 3. --- MANAGE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === '786aa1a0fb134a6fb45d3723eefb9e01') {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const member = interaction.member;
@@ -98,7 +123,7 @@ module.exports = {
             await interaction.showModal(modal);
         }
 
-        // 3. --- MODAL SUBMISSION HANDLER ---
+        // 4. --- MODAL SUBMISSION HANDLER ---
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
             await interaction.deferReply({ ephemeral: true });
 
@@ -120,7 +145,6 @@ module.exports = {
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
 
-            // Construct colors object using the exact properties expected by your custom Role.js
             const customColorsPayload = {
                 primaryColor: primaryColorHex,
                 secondaryColor: newStyle === 'gradient' ? secondaryColorHex : null,
