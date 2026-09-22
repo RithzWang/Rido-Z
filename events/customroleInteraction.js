@@ -19,14 +19,13 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
+// Updated helper using the confirmed ENHANCED_ROLE_COLORS flag
 async function checkEnhancedRolePerk(guild) {
     try {
         const fetchedGuild = await guild.fetch();
-        const hasFeatureFlag = fetchedGuild.features?.includes('ENHANCED_ROLE_STYLES');
-        const hasBoostCount = (fetchedGuild.premiumSubscriptionCount || 0) >= 3;
-        return Boolean(hasFeatureFlag || hasBoostCount);
+        return fetchedGuild.features?.includes('ENHANCED_ROLE_COLORS');
     } catch {
-        return (guild.premiumSubscriptionCount || 0) >= 3;
+        return guild.features?.includes('ENHANCED_ROLE_COLORS');
     }
 }
 
