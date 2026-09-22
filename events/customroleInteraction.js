@@ -102,9 +102,7 @@ module.exports = {
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
             await interaction.deferReply({ ephemeral: true });
 
-            // Extract the chosen style from the Custom ID
             const newStyle = interaction.customId.replace('modal_role_', ''); 
-
             const name = interaction.fields.getTextInputValue('role_name');
             const primaryColor = interaction.fields.getTextInputValue('primary_color'); 
             
@@ -126,19 +124,16 @@ module.exports = {
             let targetRole;
 
             try {
-                // UPDATE EXISTING ROLE
                 if (userRoleData) {
                     targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                     if (targetRole) {
                         
-                        // Edit role in Discord (Discord natively uses the primary color)
                         await targetRole.edit({
                             name: name,
                             color: primaryColor,
                             icon: iconBufferOrUrl || null
                         });
 
-                        // Update Database with the new style and colors
                         userRoleData.style = newStyle;
                         userRoleData.primaryColor = primaryColor;
                         userRoleData.secondaryColor = secondaryColor;
@@ -148,7 +143,6 @@ module.exports = {
                     }
                 }
 
-                // CREATE NEW ROLE
                 targetRole = await interaction.guild.roles.create({
                     name: name,
                     color: primaryColor,
@@ -159,7 +153,6 @@ module.exports = {
 
                 await interaction.member.roles.add(targetRole);
                 
-                // Save New Role with style mapping to DB
                 await UserRoleDB.create({
                     guildId: interaction.guildId,
                     userId: interaction.user.id,
