@@ -13,6 +13,12 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
+// Helper to convert #HEX string to Integer for the API payload
+function resolveColor(hex) {
+    if (!hex) return null;
+    return parseInt(hex.replace('#', ''), 16);
+}
+
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
@@ -104,11 +110,11 @@ module.exports = {
 
             const newStyle = interaction.customId.replace('modal_role_', ''); 
             const name = interaction.fields.getTextInputValue('role_name');
-            const primaryColor = interaction.fields.getTextInputValue('primary_color'); 
+            const primaryColorHex = interaction.fields.getTextInputValue('primary_color'); 
             
-            let secondaryColor = null;
+            let secondaryColorHex = null;
             if (newStyle === 'gradient') {
-                secondaryColor = interaction.fields.getTextInputValue('secondary_color');
+                secondaryColorHex = interaction.fields.getTextInputValue('secondary_color');
             }
             
             let iconBufferOrUrl = null;
@@ -120,6 +126,13 @@ module.exports = {
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
 
+            // Format custom colors object for your modified API
+            const customColorsPayload = {
+                primary_color: resolveColor(primaryColorHex),
+                secondary_color: newStyle === 'gradient' ? resolveColor(secondaryColorHex) : null,
+                tertiary_color: null
+            };
+
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             let targetRole;
 
@@ -130,22 +143,22 @@ module.exports = {
                         
                         await targetRole.edit({
                             name: name,
-                            color: primaryColor,
+                            colors: customColorsPayload,
                             icon: iconBufferOrUrl || null
                         });
 
                         userRoleData.style = newStyle;
-                        userRoleData.primaryColor = primaryColor;
-                        userRoleData.secondaryColor = secondaryColor;
+                        userRoleData.primaryColor = primaryColorHex;
+                        userRoleData.secondaryColor = secondaryColorHex;
                         await userRoleData.save();
 
-                        return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY UPDATED YOUR CUSTOM ROLE TO **${newStyle}**: ${targetRole}`);
+                        return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY UPDATED YOUR CUSTOM ROLE TO **${newStyle.toUpperCase()}**: ${targetRole}`);
                     }
                 }
 
                 targetRole = await interaction.guild.roles.create({
                     name: name,
-                    color: primaryColor,
+                    colors: customColorsPayload,
                     icon: iconBufferOrUrl || null,
                     position: anchorRole.position - 1, 
                     reason: `Custom role created by ${interaction.user.tag}`
@@ -158,8 +171,8 @@ module.exports = {
                     userId: interaction.user.id,
                     roleId: targetRole.id,
                     style: newStyle,
-                    primaryColor: primaryColor,
-                    secondaryColor: secondaryColor
+                    primaryColor: primaryColorHex,
+                    secondaryColor: secondaryColorHex
                 });
 
                 return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY CREATED YOUR CUSTOM ROLE AS ${targetRole}`);
