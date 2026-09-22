@@ -72,9 +72,10 @@ module.exports = {
                 return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
-            const selectedStyle = tempStyleSelections.get(interaction.user.id);
+            // Default to 'solid' if the user hasn't selected an option from the menu
+            let selectedStyle = tempStyleSelections.get(interaction.user.id);
             if (!selectedStyle) {
-                return interaction.reply({ content: "<:no:1551365724314935296> PLEASE SELECT A **ROLE STYLE** FIRST!", ephemeral: true });
+                selectedStyle = 'solid';
             }
             
             // Check if user already has a custom role
