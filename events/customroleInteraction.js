@@ -19,11 +19,11 @@ module.exports = {
         
         // 1. --- STRING SELECT MENU HANDLER ---
         if (interaction.isStringSelectMenu() && interaction.customId === 'eb2559e1d55f44528d5b0fe72b13b06c') {
-            const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const choice = interaction.values[0];
 
             if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { 
-                if (!config || !config.gradientEnabled) {
+                const hasEnhancedRoleStyle = interaction.guild.features.includes('ROLE_ICONS');
+                if (!hasEnhancedRoleStyle) {
                     return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT ROLE STYLE** IS NOT AVAILABLE CURRENTLY', ephemeral: true });
                 }
                 tempStyleSelections.set(interaction.user.id, 'gradient');
@@ -55,9 +55,7 @@ module.exports = {
                 }
             }
 
-            // Remove from Database
             await UserRoleDB.deleteOne({ guildId: interaction.guildId, userId: interaction.user.id });
-
             return interaction.editReply("<:yes:1551365722729484370> SUCCESSFULLY DELETED YOUR CUSTOM ROLE!");
         }
 
@@ -78,6 +76,10 @@ module.exports = {
             if (!selectedStyle) {
                 return interaction.reply({ content: "<:no:1551365724314935296> PLEASE SELECT A **ROLE STYLE** FIRST!", ephemeral: true });
             }
+            
+            // Check if user already has a custom role
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            const hasExistingRole = !!userRoleData;
 
             const modal = new ModalBuilder()
                 .setCustomId(`modal_role_${selectedStyle}`)
@@ -86,9 +88,9 @@ module.exports = {
             const nameInput = new TextInputBuilder()
                 .setCustomId('role_name')
                 .setLabel('Custom Role Name')
-                .setPlaceholder('Enter...')
+                .setPlaceholder(hasExistingRole ? 'Leave blank to keep current name' : 'Enter...')
                 .setStyle(TextInputStyle.Short)
-                .setRequired(true);
+                .setRequired(!hasExistingRole); // Optional if they already have a role
 
             const primaryColor = new TextInputBuilder()
                 .setCustomId('primary_color')
@@ -159,11 +161,17 @@ module.exports = {
                     targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                     if (targetRole) {
                         
-                        await targetRole.edit({
-                            name: name,
+                        const editPayload = {
                             colors: customColorsPayload,
                             icon: iconBufferOrUrl || null
-                        });
+                        };
+
+                        // Only apply the name update if they typed something in
+                        if (name && name.trim().length > 0) {
+                            editPayload.name = name;
+                        }
+                        
+                        await targetRole.edit(editPayload);
 
                         userRoleData.style = newStyle;
                         userRoleData.primaryColor = primaryColorHex;
