@@ -94,7 +94,7 @@ module.exports = {
             const containerComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(new TextDisplayBuilder().setContent("## <:role:1551900245653332048> Custom Role"))
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select Role Style"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 1. Select A Role Style"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new StringSelectMenuBuilder()
@@ -107,7 +107,7 @@ module.exports = {
                                 )
                         )
                     )
-                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage Custom Role"))
+                    .addTextDisplayComponents(new TextDisplayBuilder().setContent("### 2. Manage A Custom Role"))
                     .addActionRowComponents(
                         new ActionRowBuilder().addComponents(
                             new ButtonBuilder()
