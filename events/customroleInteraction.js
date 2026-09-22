@@ -19,7 +19,6 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
-// Updated helper using the confirmed ENHANCED_ROLE_COLORS flag
 async function checkEnhancedRolePerk(guild) {
     try {
         const fetchedGuild = await guild.fetch();
@@ -27,6 +26,57 @@ async function checkEnhancedRolePerk(guild) {
     } catch {
         return guild.features?.includes('ENHANCED_ROLE_COLORS');
     }
+}
+
+// Helper function to build and display the modal for both Solid and Gradient
+async function sendRoleModal(interaction, style) {
+    const isGradient = style === 'gradient';
+    const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+    const hasExistingRole = !!userRoleData;
+
+    const modal = new ModalBuilder()
+        .setCustomId(`modal_role_${style}`)
+        .setTitle(`Configure ${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
+
+    const nameInput = new TextInputBuilder()
+        .setCustomId('role_name')
+        .setLabel('Custom Role Name')
+        .setPlaceholder(hasExistingRole ? 'Leave blank to keep current name' : 'Enter...')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(!hasExistingRole); 
+
+    const primaryColor = new TextInputBuilder()
+        .setCustomId('primary_color')
+        .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
+        .setPlaceholder('Ex: #ffffff, #000001')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
+
+    modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
+    modal.addComponents(new ActionRowBuilder().addComponents(primaryColor));
+
+    if (isGradient) {
+        const secondaryColor = new TextInputBuilder()
+            .setCustomId('secondary_color')
+            .setLabel('Custom Role Secondary Colour (HEX)')
+            .setPlaceholder('Ex: #ffffff, #000001')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+        modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
+    }
+
+    const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
+    if (hasRoleIcons) {
+        const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
+        const iconLabel = new LabelBuilder()
+            .setLabel('Custom Role Icon')
+            .setDescription('This icon will be displayed next to your name (optional)')
+            .setFileUploadComponent(iconUpload);
+        
+        modal.addLabelComponents(iconLabel);
+    }
+
+    return interaction.showModal(modal);
 }
 
 module.exports = {
@@ -45,20 +95,18 @@ module.exports = {
             if (!isBooster && !hasBypassRole && !isBypassUser) {
                 return interaction.reply({ 
                     content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", 
-                    flags: MessageFlags.Ephemeral 
+                    ephemeral: true 
                 });
             }
 
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
 
-            const gradientOption = new SelectMenuOptionBuilder()
-                .setLabel("Gradient")
-                .setValue("4fa214a59b764902d1ee76040341a5f4");
-
+            // If the server doesn't have the perk, bypass the menu and show the Solid modal immediately
             if (!hasEnhancedRoleStyle) {
-                gradientOption.setDisabled(true);
+                return sendRoleModal(interaction, 'solid');
             }
 
+            // If they do have the perk, show the selection menu
             const styleSelectorComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(
@@ -77,7 +125,9 @@ module.exports = {
                                         new SelectMenuOptionBuilder()
                                             .setLabel("Solid")
                                             .setValue("2279caf5311e4e05ae9c455b9c94eb6c"),
-                                        gradientOption
+                                        new SelectMenuOptionBuilder()
+                                            .setLabel("Gradient")
+                                            .setValue("4fa214a59b764902d1ee76040341a5f4")
                                     ),
                             ),
                     ),
@@ -89,58 +139,24 @@ module.exports = {
             });
         }
 
-        // 2. --- SELECT MENU HANDLER (OPENS MODAL DIRECTLY) ---
+        // 2. --- SELECT MENU HANDLER (OPENS MODAL) ---
         if (interaction.isStringSelectMenu() && interaction.customId === 'dd9a64149d5a4124ea4e263fc2b09cc4') {
             const choice = interaction.values[0];
             const isGradient = choice === '4fa214a59b764902d1ee76040341a5f4';
             const selectedStyle = isGradient ? 'gradient' : 'solid';
 
-            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
-            const hasExistingRole = !!userRoleData;
-
-            const modal = new ModalBuilder()
-                .setCustomId(`modal_role_${selectedStyle}`)
-                .setTitle(`Configure ${selectedStyle.charAt(0).toUpperCase() + selectedStyle.slice(1)} Role`);
-
-            const nameInput = new TextInputBuilder()
-                .setCustomId('role_name')
-                .setLabel('Custom Role Name')
-                .setPlaceholder(hasExistingRole ? 'Leave blank to keep current name' : 'Enter...')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(!hasExistingRole); 
-
-            const primaryColor = new TextInputBuilder()
-                .setCustomId('primary_color')
-                .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
-                .setPlaceholder('Ex: #ffffff, #000001')
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
-            modal.addComponents(new ActionRowBuilder().addComponents(primaryColor));
-
+            // Safe-guard in case the perk is removed while the menu is open
             if (isGradient) {
-                const secondaryColor = new TextInputBuilder()
-                    .setCustomId('secondary_color')
-                    .setLabel('Custom Role Secondary Colour (HEX)')
-                    .setPlaceholder('Ex: #ffffff, #000001')
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
-                modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
+                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
+                if (!hasEnhancedRoleStyle) {
+                    return interaction.reply({ 
+                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
+                        ephemeral: true 
+                    });
+                }
             }
 
-            const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
-            if (hasRoleIcons) {
-                const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
-                const iconLabel = new LabelBuilder()
-                    .setLabel('Custom Role Icon')
-                    .setDescription('This icon will be displayed next to your name (optional)')
-                    .setFileUploadComponent(iconUpload);
-                
-                modal.addLabelComponents(iconLabel);
-            }
-
-            return interaction.showModal(modal);
+            return sendRoleModal(interaction, selectedStyle);
         }
 
         // 3. --- DELETE BUTTON HANDLER ---
