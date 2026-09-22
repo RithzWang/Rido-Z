@@ -18,6 +18,7 @@ const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
 const ANCHOR_ROLE_ID = '1528641882089984121';
+const BOUNDARY_ROLE_ID = '880828923678707712'; // Documented for hierarchy reference
 
 async function checkEnhancedRolePerk(guild) {
     try {
@@ -196,7 +197,7 @@ module.exports = {
                 }
             }
 
-            const name = interaction.fields.getTextInputValue('role_name');
+            const rawName = interaction.fields.getTextInputValue('role_name');
             const primaryColorHex = interaction.fields.getTextInputValue('primary_color'); 
             
             let secondaryColorHex = null;
@@ -212,6 +213,14 @@ module.exports = {
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
+
+            // Construct the strictly formatted "(custom) [name]" layout
+            let formattedName = null;
+            if (rawName && rawName.trim().length > 0) {
+                // Remove existing "(custom) " if the user manually typed it to avoid duplicates
+                const cleanName = rawName.replace(/^\(custom\)\s*/i, '');
+                formattedName = `(custom) ${cleanName}`;
+            }
 
             const customColorsPayload = {
                 primaryColor: primaryColorHex,
@@ -232,8 +241,8 @@ module.exports = {
                             icon: iconBufferOrUrl || null
                         };
 
-                        if (name && name.trim().length > 0) {
-                            editPayload.name = name;
+                        if (formattedName) {
+                            editPayload.name = formattedName;
                         }
                         
                         await targetRole.edit(editPayload);
@@ -247,8 +256,9 @@ module.exports = {
                     }
                 }
 
+                // Create the role positioned exactly beneath the anchor (which sits above the boundary)
                 targetRole = await interaction.guild.roles.create({
-                    name: name || 'Custom Role',
+                    name: formattedName || '(custom) Custom Role',
                     colors: customColorsPayload,
                     icon: iconBufferOrUrl || null,
                     position: anchorRole.position - 1, 
