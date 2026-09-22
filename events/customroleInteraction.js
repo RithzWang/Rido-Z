@@ -13,6 +13,18 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
+// Helper to reliably check if the server has the Enhanced Role Style feature
+async function checkEnhancedRolePerk(guild) {
+    try {
+        const fetchedGuild = await guild.fetch();
+        const hasFeatureFlag = fetchedGuild.features?.includes('ENHANCED_ROLE_STYLES') || fetchedGuild.features?.includes('ROLE_ICONS');
+        const hasBoostCount = (fetchedGuild.premiumSubscriptionCount || 0) >= 3;
+        return Boolean(hasFeatureFlag || hasBoostCount);
+    } catch {
+        return (guild.premiumSubscriptionCount || 0) >= 3;
+    }
+}
+
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
@@ -22,21 +34,32 @@ module.exports = {
             const choice = interaction.values[0];
 
             // Gradient Option
-            if (choice === '4cb76d8a16b54d01c75e50eac605087e') { 
-                tempStyleSelections.set(interaction.user.id, 'gradient');
+            if (choice === '4cb76d8a16b54d01c75e50eac605087e') {
+                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
 
-                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
                 if (!hasEnhancedRoleStyle) {
-                    return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', ephemeral: true });
+                    // Overwrite any previous cache so clicking manage won't proceed with gradient
+                    tempStyleSelections.set(interaction.user.id, 'unavailable_gradient');
+                    return interaction.reply({ 
+                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
+                        ephemeral: true 
+                    });
                 }
 
-                return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
+                tempStyleSelections.set(interaction.user.id, 'gradient');
+                return interaction.reply({ 
+                    content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', 
+                    ephemeral: true 
+                });
             } 
             
             // Solid Option
             if (choice === 'bb66815f7b9545e6f0b956a3e498109d') { 
                 tempStyleSelections.set(interaction.user.id, 'solid');
-                return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **SOLID** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
+                return interaction.reply({ 
+                    content: '<:yes:1551365722729484370> YOU SELECTED **SOLID** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', 
+                    ephemeral: true 
+                });
             }
         }
 
@@ -78,9 +101,9 @@ module.exports = {
 
             let selectedStyle = tempStyleSelections.get(interaction.user.id) || 'solid';
 
-            // Immediate rejection if gradient is selected but unavailable
-            if (selectedStyle === 'gradient') {
-                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+            // Catch users trying to manage when gradient is unavailable
+            if (selectedStyle === 'gradient' || selectedStyle === 'unavailable_gradient') {
+                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
                 if (!hasEnhancedRoleStyle) {
                     return interaction.reply({ 
                         content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
@@ -123,7 +146,7 @@ module.exports = {
                 modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
             }
 
-            const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features.includes('ROLE_ICONS');
+            const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
             if (hasRoleIcons) {
                 const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
                 const iconLabel = new LabelBuilder()
@@ -144,7 +167,7 @@ module.exports = {
             const newStyle = interaction.customId.replace('modal_role_', ''); 
             
             if (newStyle === 'gradient') {
-                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
                 if (!hasEnhancedRoleStyle) {
                     return interaction.editReply('<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY');
                 }
