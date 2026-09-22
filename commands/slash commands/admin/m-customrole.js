@@ -5,12 +5,10 @@ const {
     TextDisplayBuilder, 
     SeparatorBuilder,
     SeparatorSpacingSize,
-    StringSelectMenuBuilder, 
     ActionRowBuilder, 
     ButtonBuilder, 
     ButtonStyle, 
     ContainerBuilder,
-    SelectMenuOptionBuilder,
     MessageFlags
 } = require('discord.js');
 const ConfigDB = require('../../../schema/CustomRoleConfig');
@@ -50,7 +48,7 @@ module.exports = {
         let config = await ConfigDB.findOne({ guildId: interaction.guildId });
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
-        const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+        const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount || 0) >= 3 || interaction.guild.features?.includes('ENHANCED_ROLE_STYLES');
 
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
@@ -101,42 +99,19 @@ module.exports = {
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("**1. Choose Role Style Below**"),
-                    )
-                    .addActionRowComponents(
-                        new ActionRowBuilder()
-                            .addComponents(
-                                new StringSelectMenuBuilder()
-                                    .setCustomId("952077788e4546b0fad7d9fecc7d883e")
-                                    .setPlaceholder("Solid & Gradient")
-                                    .setDisabled(isDisabled)
-                                    .addOptions(
-                                        new SelectMenuOptionBuilder()
-                                            .setLabel("Solid")
-                                            .setValue("bb66815f7b9545e6f0b956a3e498109d"),
-                                        new SelectMenuOptionBuilder()
-                                            .setLabel("Gradient")
-                                            .setValue("4cb76d8a16b54d01c75e50eac605087e"),
-                                    ),
-                            ),
-                    )
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("**2. Manage Custom Role**"),
-                    )
                     .addActionRowComponents(
                         new ActionRowBuilder()
                             .addComponents(
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Secondary)
-                                    .setLabel("Manage")
+                                    .setLabel("Manage Custom Role")
                                     .setEmoji("1551910425254432809")
                                     .setCustomId("19d59d52506f46d7aeae1d22ab93ef1b")
                                     .setDisabled(isDisabled),
                                 new ButtonBuilder()
-                                    .setStyle(ButtonStyle.Secondary)
+                                    .setStyle(ButtonStyle.Danger)
                                     .setLabel("Delete")
-                                    .setEmoji("1551935964866150470")
+                                    .setEmoji("551935964866150470")
                                     .setCustomId("a32f08479fbd434d9fb0bcfc79811f02")
                                     .setDisabled(isDisabled),
                             ),
