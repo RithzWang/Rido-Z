@@ -11,7 +11,7 @@ const {
     SelectMenuOptionBuilder,
     MessageFlags
 } = require('discord.js');
-const ConfigDB = require('../../.../schema/CustomRoleConfig');
+const ConfigDB = require('../../../schema/CustomRoleConfig');
 
 module.exports = {
     guildOnly: true,
