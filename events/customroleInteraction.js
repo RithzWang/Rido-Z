@@ -22,7 +22,9 @@ module.exports = {
             const choice = interaction.values[0];
 
             if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { 
-                const hasEnhancedRoleStyle = interaction.guild.features.includes('ROLE_ICONS');
+                // FALLBACK CHECK: In case they click an old, un-updated panel
+                const hasEnhancedRoleStyle = interaction.guild.premiumSubscriptionCount >= 3;
+                
                 if (!hasEnhancedRoleStyle) {
                     return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT ROLE STYLE** IS NOT AVAILABLE CURRENTLY', ephemeral: true });
                 }
@@ -72,13 +74,11 @@ module.exports = {
                 return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
-            // Default to 'solid' if the user hasn't selected an option from the menu
             let selectedStyle = tempStyleSelections.get(interaction.user.id);
             if (!selectedStyle) {
                 selectedStyle = 'solid';
             }
             
-            // Check if user already has a custom role
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             const hasExistingRole = !!userRoleData;
 
@@ -91,7 +91,7 @@ module.exports = {
                 .setLabel('Custom Role Name')
                 .setPlaceholder(hasExistingRole ? 'Leave blank to keep current name' : 'Enter...')
                 .setStyle(TextInputStyle.Short)
-                .setRequired(!hasExistingRole); // Optional if they already have a role
+                .setRequired(!hasExistingRole); 
 
             const primaryColor = new TextInputBuilder()
                 .setCustomId('primary_color')
@@ -113,7 +113,8 @@ module.exports = {
                 modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
             }
 
-            if (interaction.guild.premiumTier >= 2) {
+            const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features.includes('ROLE_ICONS');
+            if (hasRoleIcons) {
                 const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
                 const iconLabel = new LabelBuilder()
                     .setLabel('Custom Role Icon')
@@ -167,7 +168,6 @@ module.exports = {
                             icon: iconBufferOrUrl || null
                         };
 
-                        // Only apply the name update if they typed something in
                         if (name && name.trim().length > 0) {
                             editPayload.name = name;
                         }
@@ -184,7 +184,7 @@ module.exports = {
                 }
 
                 targetRole = await interaction.guild.roles.create({
-                    name: name,
+                    name: name || 'Custom Role',
                     colors: customColorsPayload,
                     icon: iconBufferOrUrl || null,
                     position: anchorRole.position - 1, 
