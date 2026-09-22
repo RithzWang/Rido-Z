@@ -18,10 +18,11 @@ module.exports = {
     async execute(interaction) {
         
         // 1. --- STRING SELECT MENU HANDLER ---
-        if (interaction.isStringSelectMenu() && interaction.customId === 'eb2559e1d55f44528d5b0fe72b13b06c') {
+        if (interaction.isStringSelectMenu() && interaction.customId === '952077788e4546b0fad7d9fecc7d883e') {
             const choice = interaction.values[0];
 
-            if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { 
+            // Gradient Option
+            if (choice === '4cb76d8a16b54d01c75e50eac605087e') { 
                 tempStyleSelections.set(interaction.user.id, 'gradient');
 
                 const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
@@ -32,14 +33,15 @@ module.exports = {
                 return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
             } 
             
-            if (choice === 'ed4cec44c7b34760d6e20bd187f2cb89') { 
+            // Solid Option
+            if (choice === 'bb66815f7b9545e6f0b956a3e498109d') { 
                 tempStyleSelections.set(interaction.user.id, 'solid');
                 return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **SOLID** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
             }
         }
 
         // 2. --- DELETE BUTTON HANDLER ---
-        if (interaction.isButton() && interaction.customId === '4e0779b652fa4ee2fcce65c32d8dbf30') {
+        if (interaction.isButton() && interaction.customId === 'a32f08479fbd434d9fb0bcfc79811f02') {
             await interaction.deferReply({ ephemeral: true });
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
@@ -62,7 +64,7 @@ module.exports = {
         }
 
         // 3. --- MANAGE BUTTON HANDLER ---
-        if (interaction.isButton() && interaction.customId === '786aa1a0fb134a6fb45d3723eefb9e01') {
+        if (interaction.isButton() && interaction.customId === '19d59d52506f46d7aeae1d22ab93ef1b') {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const member = interaction.member;
 
@@ -74,10 +76,9 @@ module.exports = {
                 return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
-            // Fallback to solid if not explicitly selected
             let selectedStyle = tempStyleSelections.get(interaction.user.id) || 'solid';
 
-            // HARD CHECK: If the user selected gradient, make sure the server has the perk unlocked
+            // Immediate rejection if gradient is selected but unavailable
             if (selectedStyle === 'gradient') {
                 const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
                 if (!hasEnhancedRoleStyle) {
@@ -142,7 +143,6 @@ module.exports = {
 
             const newStyle = interaction.customId.replace('modal_role_', ''); 
             
-            // Safeguard against submitted gradient modals if boost status changed
             if (newStyle === 'gradient') {
                 const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
                 if (!hasEnhancedRoleStyle) {
