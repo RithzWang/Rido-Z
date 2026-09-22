@@ -28,12 +28,12 @@ module.exports = {
                     return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT ROLE STYLE** IS NOT AVAILABLE CURRENTLY', ephemeral: true });
                 }
                 tempStyleSelections.set(interaction.user.id, 'gradient');
-                return interaction.reply({ content: 'You selected the **Gradient** style. Click the button below to continue.', ephemeral: true });
+                return interaction.reply({ content: 'YOU SELECTED THE **GRADIENT** STYLE. CLICK THE **MANAGE CUSTOM ROLE** BUTTON TO CONTINUE!', ephemeral: true });
             } 
             
             if (choice === 'ed4cec44c7b34760d6e20bd187f2cb89') { // Solid
                 tempStyleSelections.set(interaction.user.id, 'solid');
-                return interaction.reply({ content: 'You selected the **Solid** style. Click the button below to continue.', ephemeral: true });
+                return interaction.reply({ content: 'YOU SELECTED THE **SOLID** STYLE. CLICK THE **MANAGE CUSTOM ROLE** BUTTON TO CONTINUE!', ephemeral: true });
             }
         }
 
@@ -48,12 +48,12 @@ module.exports = {
             const isBypassUser = config?.bypassedUsers.includes(member.id);
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
-                return interaction.reply({ content: "You need to be a Server Booster or have a bypass role to use this perk.", ephemeral: true });
+                return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
             const selectedStyle = tempStyleSelections.get(interaction.user.id);
             if (!selectedStyle) {
-                return interaction.reply({ content: "Please select a **Role Style** from the dropdown menu first!", ephemeral: true });
+                return interaction.reply({ content: "<:no:1551365724314935296> PLEASE SELECT A **ROLE STYLE FIRST**!", ephemeral: true });
             }
 
             // Build Modal
@@ -137,7 +137,7 @@ module.exports = {
                             color: color,
                             icon: iconBufferOrUrl || null
                         });
-                        return interaction.editReply(`✅ Successfully updated your custom role: ${targetRole}`);
+                        return interaction.editReply(`<:yes:1551365722729484370> YOUR CUSTOM ROLE HAS BEEN UPDATED AS ${targetRole}`);
                     }
                 }
 
@@ -158,7 +158,7 @@ module.exports = {
                     roleId: targetRole.id
                 });
 
-                return interaction.editReply(`✅ Successfully created and assigned your custom role: ${targetRole}`);
+                return interaction.editReply(`<:yes:1551365722729484370> YOUR CUSTOM ROLE HAS BEEN CREATED AS ${targetRole}`);
 
             } catch (error) {
                 console.error("Custom Role Error:", error);
