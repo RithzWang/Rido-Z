@@ -13,12 +13,6 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
-// Helper to convert #HEX string to Integer for the API payload
-function resolveColor(hex) {
-    if (!hex) return null;
-    return parseInt(hex.replace('#', ''), 16);
-}
-
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
@@ -126,11 +120,11 @@ module.exports = {
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
 
-            // Format custom colors object for your modified API
+            // Construct colors object using the exact properties expected by your custom Role.js
             const customColorsPayload = {
-                primary_color: resolveColor(primaryColorHex),
-                secondary_color: newStyle === 'gradient' ? resolveColor(secondaryColorHex) : null,
-                tertiary_color: null
+                primaryColor: primaryColorHex,
+                secondaryColor: newStyle === 'gradient' ? secondaryColorHex : null,
+                tertiaryColor: null
             };
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
