@@ -48,7 +48,8 @@ module.exports = {
         let config = await ConfigDB.findOne({ guildId: interaction.guildId });
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
-        const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount || 0) >= 3 || interaction.guild.features?.includes('ENHANCED_ROLE_STYLES');
+        // Using the newly confirmed ENHANCED_ROLE_COLORS flag
+        const hasEnhancedRoleStyle = interaction.guild.features?.includes('ENHANCED_ROLE_COLORS');
 
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
@@ -56,7 +57,7 @@ module.exports = {
                 .setTitle('Custom Role Dashboard')
                 .setColor('#2b2d31')
                 .addFields(
-                    { name: 'Enhanced Perks (Gradient)', value: hasEnhancedRoleStyle ? '✅ Unlocked (3+ Boosts)' : '❌ Locked (Requires 3 Boosts)', inline: true },
+                    { name: 'Enhanced Perks (Gradient)', value: hasEnhancedRoleStyle ? '✅ Unlocked' : '❌ Locked', inline: true },
                     { name: 'Global Disabled', value: config.globalDisabled ? '🔴 Yes (Disabled)' : '🟢 No (Active)', inline: true },
                     { name: 'Bypassed Roles', value: config.bypassedRoles.length > 0 ? config.bypassedRoles.map(id => `<@&${id}>`).join(', ') : 'None', inline: false },
                     { name: 'Bypassed Users', value: config.bypassedUsers.length > 0 ? config.bypassedUsers.map(id => `<@${id}>`).join(', ') : 'None', inline: false }
@@ -111,7 +112,7 @@ module.exports = {
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Danger)
                                     .setLabel("Delete")
-                                    .setEmoji("1551935964866150470") // Fixed emoji string as provided
+                                    .setEmoji("1551935964866150470") 
                                     .setCustomId("a32f08479fbd434d9fb0bcfc79811f02")
                                     .setDisabled(isDisabled),
                             ),
