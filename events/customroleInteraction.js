@@ -7,10 +7,9 @@ const {
     FileUploadBuilder, 
     LabelBuilder 
 } = require('discord.js');
-const ConfigDB = require('../schema/CustomRoleConfig');
-const UserRoleDB = require('../schema/CustomRoleUser');
+const ConfigDB = require('../models/CustomRoleConfig');
+const UserRoleDB = require('../models/CustomRoleUser');
 
-// Temporary in-memory cache to remember what style a user selected in the dropdown
 const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
@@ -23,17 +22,17 @@ module.exports = {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const choice = interaction.values[0];
 
-            if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { // Gradient
+            if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { 
                 if (!config || !config.gradientEnabled) {
                     return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT ROLE STYLE** IS NOT AVAILABLE CURRENTLY', ephemeral: true });
                 }
                 tempStyleSelections.set(interaction.user.id, 'gradient');
-                return interaction.reply({ content: 'YOU SELECTED THE **GRADIENT** STYLE. CLICK THE **MANAGE CUSTOM ROLE** BUTTON TO CONTINUE!', ephemeral: true });
+                return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
             } 
             
-            if (choice === 'ed4cec44c7b34760d6e20bd187f2cb89') { // Solid
+            if (choice === 'ed4cec44c7b34760d6e20bd187f2cb89') { 
                 tempStyleSelections.set(interaction.user.id, 'solid');
-                return interaction.reply({ content: 'YOU SELECTED THE **SOLID** STYLE. CLICK THE **MANAGE CUSTOM ROLE** BUTTON TO CONTINUE!', ephemeral: true });
+                return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **SOLID** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
             }
         }
 
@@ -42,21 +41,19 @@ module.exports = {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const member = interaction.member;
 
-            // Permission check: Nitro Booster, Bypass Role, or Bypass User
             const isBooster = member.premiumSince !== null;
             const hasBypassRole = config?.bypassedRoles.some(roleId => member.roles.cache.has(roleId));
             const isBypassUser = config?.bypassedUsers.includes(member.id);
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
-                return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", ephemeral: true });
+                return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
             const selectedStyle = tempStyleSelections.get(interaction.user.id);
             if (!selectedStyle) {
-                return interaction.reply({ content: "<:no:1551365724314935296> PLEASE SELECT A **ROLE STYLE FIRST**!", ephemeral: true });
+                return interaction.reply({ content: "<:no:1551365724314935296> PLEASE SELECT A **ROLE STYLE** FIRST!", ephemeral: true });
             }
 
-            // Build Modal
             const modal = new ModalBuilder()
                 .setCustomId(`modal_role_${selectedStyle}`)
                 .setTitle(`Configure ${selectedStyle.charAt(0).toUpperCase() + selectedStyle.slice(1)} Role`);
@@ -75,7 +72,6 @@ module.exports = {
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
 
-            // Using ActionRowBuilder for Text Inputs
             modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
             modal.addComponents(new ActionRowBuilder().addComponents(primaryColor));
 
@@ -89,7 +85,6 @@ module.exports = {
                 modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
             }
 
-            // Tier 2 File Upload logic using custom builders
             if (interaction.guild.premiumTier >= 2) {
                 const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
                 const iconLabel = new LabelBuilder()
@@ -107,19 +102,22 @@ module.exports = {
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
             await interaction.deferReply({ ephemeral: true });
 
+            // Extract the chosen style from the Custom ID
+            const newStyle = interaction.customId.replace('modal_role_', ''); 
+
             const name = interaction.fields.getTextInputValue('role_name');
-            const color = interaction.fields.getTextInputValue('primary_color'); // Natively discord only supports 1 color per role
+            const primaryColor = interaction.fields.getTextInputValue('primary_color'); 
             
-            // Try to extract the custom file upload if it exists
+            let secondaryColor = null;
+            if (newStyle === 'gradient') {
+                secondaryColor = interaction.fields.getTextInputValue('secondary_color');
+            }
+            
             let iconBufferOrUrl = null;
             try {
                 const fileAttachment = interaction.fields.getAttachment('role_icon_file');
-                if (fileAttachment) {
-                    iconBufferOrUrl = fileAttachment.url;
-                }
-            } catch (err) {
-                // Ignore if field doesn't exist (e.g. Server isn't Tier 2)
-            }
+                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
+            } catch (err) { }
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
@@ -128,41 +126,54 @@ module.exports = {
             let targetRole;
 
             try {
-                // EDIT EXISTING ROLE
+                // UPDATE EXISTING ROLE
                 if (userRoleData) {
                     targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                     if (targetRole) {
+                        
+                        // Edit role in Discord (Discord natively uses the primary color)
                         await targetRole.edit({
                             name: name,
-                            color: color,
+                            color: primaryColor,
                             icon: iconBufferOrUrl || null
                         });
-                        return interaction.editReply(`<:yes:1551365722729484370> YOUR CUSTOM ROLE HAS BEEN UPDATED AS ${targetRole}`);
+
+                        // Update Database with the new style and colors
+                        userRoleData.style = newStyle;
+                        userRoleData.primaryColor = primaryColor;
+                        userRoleData.secondaryColor = secondaryColor;
+                        await userRoleData.save();
+
+                        return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY UPDATED YOUR CUSTOM ROLE TO **${newStyle}**: ${targetRole}`);
                     }
                 }
 
-                // OR CREATE NEW ROLE
+                // CREATE NEW ROLE
                 targetRole = await interaction.guild.roles.create({
                     name: name,
-                    color: color,
+                    color: primaryColor,
                     icon: iconBufferOrUrl || null,
-                    position: anchorRole.position - 1, // Place below the anchor
+                    position: anchorRole.position - 1, 
                     reason: `Custom role created by ${interaction.user.tag}`
                 });
 
-                // Assign role & save to DB
                 await interaction.member.roles.add(targetRole);
+                
+                // Save New Role with style mapping to DB
                 await UserRoleDB.create({
                     guildId: interaction.guildId,
                     userId: interaction.user.id,
-                    roleId: targetRole.id
+                    roleId: targetRole.id,
+                    style: newStyle,
+                    primaryColor: primaryColor,
+                    secondaryColor: secondaryColor
                 });
 
-                return interaction.editReply(`<:yes:1551365722729484370> YOUR CUSTOM ROLE HAS BEEN CREATED AS ${targetRole}`);
+                return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY CREATED YOUR CUSTOM ROLE AS ${targetRole}`);
 
             } catch (error) {
                 console.error("Custom Role Error:", error);
-                return interaction.editReply("❌ There was an error managing your role. Make sure the bot's highest role is above the anchor role, and check your HEX format.");
+                return interaction.editReply("<:no:1551365724314935296> PLEASE ENSURE THE **HEX** FORMAT IS CORRECT!");
             }
         }
     }
