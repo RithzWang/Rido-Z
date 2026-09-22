@@ -22,13 +22,13 @@ module.exports = {
             const choice = interaction.values[0];
 
             if (choice === 'ba5a1daeadf14cff8d7e388e04921def') { 
-                // FALLBACK CHECK: In case they click an old, un-updated panel
-                const hasEnhancedRoleStyle = interaction.guild.premiumSubscriptionCount >= 3;
-                
-                if (!hasEnhancedRoleStyle) {
-                    return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT ROLE STYLE** IS NOT AVAILABLE CURRENTLY', ephemeral: true });
-                }
                 tempStyleSelections.set(interaction.user.id, 'gradient');
+
+                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+                if (!hasEnhancedRoleStyle) {
+                    return interaction.reply({ content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', ephemeral: true });
+                }
+
                 return interaction.reply({ content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', ephemeral: true });
             } 
             
@@ -74,9 +74,18 @@ module.exports = {
                 return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
-            let selectedStyle = tempStyleSelections.get(interaction.user.id);
-            if (!selectedStyle) {
-                selectedStyle = 'solid';
+            // Fallback to solid if not explicitly selected
+            let selectedStyle = tempStyleSelections.get(interaction.user.id) || 'solid';
+
+            // HARD CHECK: If the user selected gradient, make sure the server has the perk unlocked
+            if (selectedStyle === 'gradient') {
+                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+                if (!hasEnhancedRoleStyle) {
+                    return interaction.reply({ 
+                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
+                        ephemeral: true 
+                    });
+                }
             }
             
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
@@ -132,6 +141,15 @@ module.exports = {
             await interaction.deferReply({ ephemeral: true });
 
             const newStyle = interaction.customId.replace('modal_role_', ''); 
+            
+            // Safeguard against submitted gradient modals if boost status changed
+            if (newStyle === 'gradient') {
+                const hasEnhancedRoleStyle = (interaction.guild.premiumSubscriptionCount >= 3);
+                if (!hasEnhancedRoleStyle) {
+                    return interaction.editReply('<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY');
+                }
+            }
+
             const name = interaction.fields.getTextInputValue('role_name');
             const primaryColorHex = interaction.fields.getTextInputValue('primary_color'); 
             
