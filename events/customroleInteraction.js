@@ -5,19 +5,24 @@ const {
     TextInputStyle, 
     ActionRowBuilder, 
     FileUploadBuilder, 
-    LabelBuilder 
+    LabelBuilder,
+    ContainerBuilder,
+    TextDisplayBuilder,
+    SeparatorBuilder,
+    SeparatorSpacingSize,
+    StringSelectMenuBuilder,
+    SelectMenuOptionBuilder,
+    MessageFlags
 } = require('discord.js');
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
-const tempStyleSelections = new Map();
 const ANCHOR_ROLE_ID = '1528641882089984121';
 
-// Helper to reliably check if the server has the Enhanced Role Style feature
 async function checkEnhancedRolePerk(guild) {
     try {
         const fetchedGuild = await guild.fetch();
-        const hasFeatureFlag = fetchedGuild.features?.includes('ENHANCED_ROLE_STYLES') || fetchedGuild.features?.includes('ROLE_ICONS');
+        const hasFeatureFlag = fetchedGuild.features?.includes('ENHANCED_ROLE_STYLES');
         const hasBoostCount = (fetchedGuild.premiumSubscriptionCount || 0) >= 3;
         return Boolean(hasFeatureFlag || hasBoostCount);
     } catch {
@@ -29,64 +34,7 @@ module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction) {
         
-        // 1. --- STRING SELECT MENU HANDLER ---
-        if (interaction.isStringSelectMenu() && interaction.customId === '952077788e4546b0fad7d9fecc7d883e') {
-            const choice = interaction.values[0];
-
-            // Gradient Option
-            if (choice === '4cb76d8a16b54d01c75e50eac605087e') {
-                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
-
-                if (!hasEnhancedRoleStyle) {
-                    // Overwrite any previous cache so clicking manage won't proceed with gradient
-                    tempStyleSelections.set(interaction.user.id, 'unavailable_gradient');
-                    return interaction.reply({ 
-                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
-                        ephemeral: true 
-                    });
-                }
-
-                tempStyleSelections.set(interaction.user.id, 'gradient');
-                return interaction.reply({ 
-                    content: '<:yes:1551365722729484370> YOU SELECTED **GRADIENT** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', 
-                    ephemeral: true 
-                });
-            } 
-            
-            // Solid Option
-            if (choice === 'bb66815f7b9545e6f0b956a3e498109d') { 
-                tempStyleSelections.set(interaction.user.id, 'solid');
-                return interaction.reply({ 
-                    content: '<:yes:1551365722729484370> YOU SELECTED **SOLID** STYLE. CLICK THE BUTTON BELOW TO CONTINUE!', 
-                    ephemeral: true 
-                });
-            }
-        }
-
-        // 2. --- DELETE BUTTON HANDLER ---
-        if (interaction.isButton() && interaction.customId === 'a32f08479fbd434d9fb0bcfc79811f02') {
-            await interaction.deferReply({ ephemeral: true });
-
-            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
-
-            if (!userRoleData) {
-                return interaction.editReply("<:no:1551365724314935296> YOU DON’T HAVE A CUSTOM ROLE YET");
-            }
-
-            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
-            if (targetRole) {
-                try {
-                    await targetRole.delete("User deleted their custom role via panel");
-                } catch (error) {
-                    console.error("Failed to delete role:", error);
-                }
-            }
-
-            await UserRoleDB.deleteOne({ guildId: interaction.guildId, userId: interaction.user.id });
-            return interaction.editReply("<:yes:1551365722729484370> SUCCESSFULLY DELETED YOUR CUSTOM ROLE!");
-        }
-
-        // 3. --- MANAGE BUTTON HANDLER ---
+        // 1. --- MANAGE CUSTOM ROLE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === '19d59d52506f46d7aeae1d22ab93ef1b') {
             const config = await ConfigDB.findOne({ guildId: interaction.guildId });
             const member = interaction.member;
@@ -99,19 +47,53 @@ module.exports = {
                 return interaction.reply({ content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", ephemeral: true });
             }
 
-            let selectedStyle = tempStyleSelections.get(interaction.user.id) || 'solid';
+            const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
 
-            // Catch users trying to manage when gradient is unavailable
-            if (selectedStyle === 'gradient' || selectedStyle === 'unavailable_gradient') {
-                const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
-                if (!hasEnhancedRoleStyle) {
-                    return interaction.reply({ 
-                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
-                        ephemeral: true 
-                    });
-                }
+            const gradientOption = new SelectMenuOptionBuilder()
+                .setLabel("Gradient")
+                .setValue("4fa214a59b764902d1ee76040341a5f4");
+
+            if (!hasEnhancedRoleStyle) {
+                gradientOption.setDisabled(true);
             }
-            
+
+            const styleSelectorComponents = [
+                new ContainerBuilder()
+                    .addTextDisplayComponents(
+                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Role Style"),
+                    )
+                    .addSeparatorComponents(
+                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+                    )
+                    .addActionRowComponents(
+                        new ActionRowBuilder()
+                            .addComponents(
+                                new StringSelectMenuBuilder()
+                                    .setCustomId("dd9a64149d5a4124ea4e263fc2b09cc4")
+                                    .setPlaceholder("Solid & Gradient")
+                                    .addOptions(
+                                        new SelectMenuOptionBuilder()
+                                            .setLabel("Solid")
+                                            .setValue("2279caf5311e4e05ae9c455b9c94eb6c"),
+                                        gradientOption
+                                    ),
+                            ),
+                    ),
+            ];
+
+            return interaction.reply({ 
+                components: styleSelectorComponents, 
+                flags: MessageFlags.IsComponentsV2,
+                ephemeral: true 
+            });
+        }
+
+        // 2. --- SELECT MENU HANDLER (OPENS MODAL DIRECTLY) ---
+        if (interaction.isStringSelectMenu() && interaction.customId === 'dd9a64149d5a4124ea4e263fc2b09cc4') {
+            const choice = interaction.values[0];
+            const isGradient = choice === '4fa214a59b764902d1ee76040341a5f4';
+            const selectedStyle = isGradient ? 'gradient' : 'solid';
+
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             const hasExistingRole = !!userRoleData;
 
@@ -128,7 +110,7 @@ module.exports = {
 
             const primaryColor = new TextInputBuilder()
                 .setCustomId('primary_color')
-                .setLabel(selectedStyle === 'solid' ? 'Custom Role Colour (HEX)' : 'Custom Role Primary Colour (HEX)')
+                .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
                 .setPlaceholder('Ex: #ffffff, #000001')
                 .setStyle(TextInputStyle.Short)
                 .setRequired(true);
@@ -136,7 +118,7 @@ module.exports = {
             modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
             modal.addComponents(new ActionRowBuilder().addComponents(primaryColor));
 
-            if (selectedStyle === 'gradient') {
+            if (isGradient) {
                 const secondaryColor = new TextInputBuilder()
                     .setCustomId('secondary_color')
                     .setLabel('Custom Role Secondary Colour (HEX)')
@@ -157,7 +139,30 @@ module.exports = {
                 modal.addLabelComponents(iconLabel);
             }
 
-            await interaction.showModal(modal);
+            return interaction.showModal(modal);
+        }
+
+        // 3. --- DELETE BUTTON HANDLER ---
+        if (interaction.isButton() && interaction.customId === 'a32f08479fbd434d9fb0bcfc79811f02') {
+            await interaction.deferReply({ ephemeral: true });
+
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+
+            if (!userRoleData) {
+                return interaction.editReply("<:no:1551365724314935296> YOU DON’T HAVE A CUSTOM ROLE YET");
+            }
+
+            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            if (targetRole) {
+                try {
+                    await targetRole.delete("User deleted their custom role via panel");
+                } catch (error) {
+                    console.error("Failed to delete role:", error);
+                }
+            }
+
+            await UserRoleDB.deleteOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            return interaction.editReply("<:yes:1551365722729484370> SUCCESSFULLY DELETED YOUR CUSTOM ROLE!");
         }
 
         // 4. --- MODAL SUBMISSION HANDLER ---
