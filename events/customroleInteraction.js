@@ -37,7 +37,8 @@ async function sendRoleModal(interaction, style) {
     const isGradient = style === 'gradient';
     const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
     
-    const hasExistingRole = !!(userRoleData && userRoleData.roleId);
+    // Check if they have an active role (not deleted)
+    const hasExistingRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
 
     const modal = new ModalBuilder()
         .setCustomId(`modal_role_${style}`)
@@ -110,8 +111,6 @@ module.exports = {
 
             // --- 24-HOUR COOLDOWN CHECK ---
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
-            
-            // Checks if the member has any of the exempt roles
             const isExempt = interaction.member.roles.cache.some(role => EXEMPT_ROLES.includes(role.id));
 
             if (userRoleData && !isExempt) {
@@ -196,7 +195,8 @@ module.exports = {
             try {
                 const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
-                if (!userRoleData || !userRoleData.roleId || userRoleData.roleId === "") {
+                // Block if no document, or if roleId already starts with "deleted_"
+                if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
                     return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
                 }
 
@@ -209,7 +209,8 @@ module.exports = {
                     }
                 }
 
-                userRoleData.roleId = ""; 
+                // FIX: Use a unique placeholder string so Mongoose doesn't throw a validation/unique error
+                userRoleData.roleId = `deleted_${interaction.user.id}`; 
                 userRoleData.lastUpdatedAt = new Date();
                 
                 await userRoleData.save();
@@ -272,7 +273,8 @@ module.exports = {
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             
             let targetRole;
-            if (userRoleData && userRoleData.roleId) {
+            // Only try to fetch the role if the ID is real (not a "deleted" placeholder)
+            if (userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_')) {
                 targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
             }
 
@@ -300,6 +302,7 @@ module.exports = {
                     return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role to **${newStyle.toUpperCase()}**: ${targetRole}`);
                 }
 
+                // Create new role (Triggers if brand new user OR if their old role was marked as deleted)
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
@@ -312,6 +315,7 @@ module.exports = {
                 await interaction.member.roles.add(targetRole);
                 
                 if (userRoleData) {
+                    // Update their existing document (overwrites the "deleted_..." placeholder)
                     userRoleData.roleId = targetRole.id;
                     userRoleData.style = newStyle;
                     userRoleData.primaryColor = primaryColorHex;
