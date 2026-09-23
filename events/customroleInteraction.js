@@ -11,12 +11,11 @@ const {
     SeparatorBuilder,
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder, // <--- Change this here
+    StringSelectMenuOptionBuilder,
     MessageFlags,
     ButtonStyle,
     ButtonBuilder
 } = require('discord.js');
-
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
@@ -26,6 +25,16 @@ const BOUNDARY_ROLE_ID = '1552136781984436264';
 // Cooldown Configuration
 const EXEMPT_ROLES = ['878566116203589632', '1469705529306910753'];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// Helper to format string hex codes
+function formatDiscordColor(hexString) {
+    if (!hexString) return '';
+    let clean = hexString.replace(/^#+/g, '').trim(); 
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join(''); 
+    }
+    return `#${clean.toUpperCase()}`; 
+}
 
 async function checkEnhancedRolePerk(guild) {
     try {
@@ -40,7 +49,6 @@ async function sendRoleModal(interaction, style) {
     const isGradient = style === 'gradient';
     const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
     
-    // Check if they have an active role (not deleted)
     const hasExistingRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
 
     const modal = new ModalBuilder()
@@ -81,7 +89,7 @@ async function sendRoleModal(interaction, style) {
     modal.addTextDisplayComponents(colorsText);
     modal.addLabelComponents(primaryColorLabel);
 
-    // 4. Secondary Colour Input (Only if Gradient)
+    // 4. Secondary Colour Input
     if (isGradient) {
         const secondaryColorInput = new TextInputBuilder()
             .setCustomId('secondary_color')
@@ -98,7 +106,7 @@ async function sendRoleModal(interaction, style) {
         modal.addLabelComponents(secondaryColorLabel);
     }
 
-    // 5. Custom Icon Upload (Only if server has the perk)
+    // 5. Custom Icon Upload
     const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
     if (hasRoleIcons) {
         const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
@@ -133,7 +141,6 @@ module.exports = {
                 });
             }
 
-            // --- 24-HOUR COOLDOWN CHECK ---
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             const isExempt = interaction.member.roles.cache.some(role => EXEMPT_ROLES.includes(role.id));
 
@@ -193,7 +200,7 @@ module.exports = {
             });
         }
 
-        // 2. --- SELECT MENU HANDLER (OPENS MODAL) ---
+        // 2. --- SELECT MENU HANDLER ---
         if (interaction.isStringSelectMenu() && interaction.customId === '7961861e646f4b8f9acccc9767c973ff') {
             const choice = interaction.values[0];
             const isGradient = choice === '5ab448a89aa04452b6f1276f6853296c';
@@ -212,23 +219,34 @@ module.exports = {
             return sendRoleModal(interaction, selectedStyle);
         }
 
-        // 3. --- INITIAL DELETE BUTTON HANDLER (Sends Confirmation Prompt) ---
+        // 3. --- INITIAL DELETE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === 'a1e2a2b3a3044a5ab488f7d5e2558a8c') {
             await interaction.deferReply({ ephemeral: true });
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
-            // Block if no document, or if roleId already starts with "deleted_"
             if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
                 return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
             }
 
-            // Format color texts appropriately based on Solid vs Gradient
+            // Fetch actual colors from Discord
+            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            let actualPrimaryColor = targetRole ? targetRole.hexColor.toUpperCase() : formatDiscordColor(userRoleData.primaryColor);
+            let actualSecondaryColor = userRoleData.secondaryColor ? formatDiscordColor(userRoleData.secondaryColor) : null;
+
+            // Extract the secondary color directly from the Discord role if available
+            if (targetRole && targetRole.colors) {
+                const secColorInt = targetRole.colors.secondaryColor ?? targetRole.colors.secondary_color;
+                if (secColorInt !== undefined && secColorInt !== null) {
+                    actualSecondaryColor = `#${secColorInt.toString(16).padStart(6, '0').toUpperCase()}`;
+                }
+            }
+
             const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `-# _Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\``;
+            let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
             
-            if (isGradient && userRoleData.secondaryColor) {
-                formattedColorText = `-# _Primary Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\`\n-# _Secondary Colour_: \`#${userRoleData.secondaryColor.toUpperCase()}\``;
+            if (isGradient && actualSecondaryColor) {
+                formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour_: \`${actualSecondaryColor}\``;
             }
 
             const confirmationComponents = [
@@ -260,7 +278,7 @@ module.exports = {
             });
         }
 
-        // 3b. --- CONFIRM DELETE (User clicked "Yes, I am sure") ---
+        // 3b. --- CONFIRM DELETE ---
         if (interaction.isButton() && interaction.customId === 'c724df3843ac4653b315b3ceec12d4a0') {
             
             try {
@@ -273,11 +291,22 @@ module.exports = {
                     });
                 }
 
-                // Step 1: Disable the "Yes, I am sure" button immediately by modifying the existing prompt
+                // Fetch actual colors from Discord
+                const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+                let actualPrimaryColor = targetRole ? targetRole.hexColor.toUpperCase() : formatDiscordColor(userRoleData.primaryColor);
+                let actualSecondaryColor = userRoleData.secondaryColor ? formatDiscordColor(userRoleData.secondaryColor) : null;
+
+                if (targetRole && targetRole.colors) {
+                    const secColorInt = targetRole.colors.secondaryColor ?? targetRole.colors.secondary_color;
+                    if (secColorInt !== undefined && secColorInt !== null) {
+                        actualSecondaryColor = `#${secColorInt.toString(16).padStart(6, '0').toUpperCase()}`;
+                    }
+                }
+
                 const isGradient = userRoleData.style === 'gradient';
-                let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
-                if (isGradient && userRoleData.secondaryColor) {
-                    formattedColorText = `_Primary Colour_: \`${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`${userRoleData.secondaryColor.toUpperCase()}\``;
+                let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
+                if (isGradient && actualSecondaryColor) {
+                    formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour_: \`${actualSecondaryColor}\``;
                 }
 
                 const disabledComponents = [
@@ -299,19 +328,16 @@ module.exports = {
                                         .setLabel("Yes, I am sure")
                                         .setEmoji({ name: "✔️" })
                                         .setCustomId("c724df3843ac4653b315b3ceec12d4a0")
-                                        .setDisabled(true) // Disable the button
+                                        .setDisabled(true) 
                                 ),
                         ),
                 ];
 
-                // .update() acknowledges the button press and modifies the prompt at the same time
                 await interaction.update({ 
                     components: disabledComponents, 
                     flags: [MessageFlags.IsComponentsV2] 
                 });
 
-                // Step 2: Delete the role from Discord
-                const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                 if (targetRole) {
                     try {
                         await targetRole.delete("User deleted their custom role via panel");
@@ -320,13 +346,11 @@ module.exports = {
                     }
                 }
 
-                // Step 3: Update database
                 userRoleData.roleId = `deleted_${interaction.user.id}`; 
                 userRoleData.lastUpdatedAt = new Date();
                 
                 await userRoleData.save();
 
-                // Step 4: Send the success message dynamically as a new ephemeral reply
                 return interaction.followUp({ 
                     content: "<:yes:1551365722729484370> Successfully deleted your custom role!", 
                     ephemeral: true 
@@ -335,7 +359,6 @@ module.exports = {
             } catch (error) {
                 console.error("Database Save Error during deletion:", error);
                 
-                // Fallback error messaging depending on if the button was already acknowledged
                 if (!interaction.replied && !interaction.deferred) {
                     return interaction.reply({ 
                         content: "<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.", 
@@ -400,7 +423,6 @@ module.exports = {
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             
             let targetRole;
-            // Only try to fetch the role if the ID is real (not a "deleted" placeholder)
             if (userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_')) {
                 targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
             }
@@ -429,7 +451,6 @@ module.exports = {
                     return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role to **${newStyle.toUpperCase()}**: ${targetRole}`);
                 }
 
-                // Create new role (Triggers if brand new user OR if their old role was marked as deleted)
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
@@ -442,7 +463,6 @@ module.exports = {
                 await interaction.member.roles.add(targetRole);
                 
                 if (userRoleData) {
-                    // Update their existing document (overwrites the "deleted_..." placeholder)
                     userRoleData.roleId = targetRole.id;
                     userRoleData.style = newStyle;
                     userRoleData.primaryColor = primaryColorHex;
