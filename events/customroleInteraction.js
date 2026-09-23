@@ -42,7 +42,7 @@ async function sendRoleModal(interaction, style) {
 
     const modal = new ModalBuilder()
         .setCustomId(`modal_role_${style}`)
-        .setTitle(`Configure ${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
+        .setTitle(`${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
 
     // 1. Custom Role Name (Using LabelBuilder for the description)
     const nameInput = new TextInputBuilder()
