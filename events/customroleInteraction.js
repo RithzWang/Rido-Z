@@ -53,18 +53,18 @@ async function sendRoleModal(interaction, style) {
 
     const nameLabel = new LabelBuilder()
         .setLabel('Custom Role Name')
-        .setDescription(hasExistingRole ? 'Leave blank to keep current name' : 'Enter your custom role name')
+        .setDescription(hasExistingRole ? 'Leave Blank To Keep Current Name' : 'Enter Your Custom Role Name')
         .setTextInputComponent(nameInput); // Binds the text input to the label
 
     // 2. Text Display for Basic Colours
     const colorsText = new TextDisplayBuilder().setContent(
-        'Basic Colours\n-# <:yes:1528709597647470615> **Black** : #000001, **White** : #FFFFFF\n-# **Red** : #FF0000, **Yellow** : #FFFF00\n-# **Blue** : #0000FF, **Green** : #00FF00'
+        'Basic Colours\n-# <:000001:1552333485492932608> **Black** : #000001 - <:FFFFFF:1552333488164708433> **White** : #FFFFFF\n-# <:FF0000:1552333490429894697> **Red** : #FF0000 - <:FFFF00:1552333492245893242> **Yellow** : #FFFF00\n-# <:0000FF:1552333494397567057> **Blue** : #0000FF - <:00FF00:1552333496523948112> **Green** : #00FF00'
     );
 
     // 3. Primary Colour Input
     const primaryColorInput = new TextInputBuilder()
         .setCustomId('primary_color')
-        .setPlaceholder('Enter')
+        .setPlaceholder('Tap to type...')
         .setStyle(TextInputStyle.Short)
         .setMinLength(4)
         .setMaxLength(7)
@@ -83,7 +83,7 @@ async function sendRoleModal(interaction, style) {
     if (isGradient) {
         const secondaryColorInput = new TextInputBuilder()
             .setCustomId('secondary_color')
-            .setPlaceholder('Enter')
+            .setPlaceholder('Tap to type...')
             .setStyle(TextInputStyle.Short)
             .setMinLength(4)
             .setMaxLength(7)
@@ -102,7 +102,7 @@ async function sendRoleModal(interaction, style) {
         const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
         const iconLabel = new LabelBuilder()
             .setLabel('Custom Role Icon')
-            .setDescription('This icon will be displayed next to your name')
+            .setDescription('This Icon Will Be Displayed Next To Your Name')
             .setFileUploadComponent(iconUpload);
         
         modal.addLabelComponents(iconLabel);
