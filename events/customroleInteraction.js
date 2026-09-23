@@ -227,7 +227,7 @@ module.exports = {
             let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
             
             if (isGradient && userRoleData.secondaryColor) {
-                formattedColorText = `_Primary Colour_: \`${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`${userRoleData.secondaryColor.toUpperCase()}\``;
+                formattedColorText = `_Primary Colour_: \`£${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`#${userRoleData.secondaryColor.toUpperCase()}\``;
             }
 
             const confirmationComponents = [
@@ -246,14 +246,9 @@ module.exports = {
                             .addComponents(
                                 new ButtonBuilder()
                                     .setStyle(ButtonStyle.Success)
-                                    .setLabel("Yes, I am")
+                                    .setLabel("Yes, I am sure")
                                     .setEmoji({ name: "✔️" })
                                     .setCustomId("c724df3843ac4653b315b3ceec12d4a0"),
-                                new ButtonBuilder()
-                                    .setStyle(ButtonStyle.Danger)
-                                    .setLabel("No, I'm not")
-                                    .setEmoji({ name: "✖️" })
-                                    .setCustomId("43064211a055448f9f9bb4dc85c40eec"),
                             ),
                     ),
             ];
@@ -264,7 +259,7 @@ module.exports = {
             });
         }
 
-        // 3b. --- CONFIRM DELETE (User clicked "Yes, I am") ---
+        // 3b. --- CONFIRM DELETE (User clicked "Yes, I am sure") ---
         if (interaction.isButton() && interaction.customId === 'c724df3843ac4653b315b3ceec12d4a0') {
             await interaction.deferUpdate(); // Acknowledges button click without sending a new message
 
@@ -305,16 +300,6 @@ module.exports = {
                     flags: [] 
                 });
             }
-        }
-
-        // 3c. --- CANCEL DELETE (User clicked "No, I'm not") ---
-        if (interaction.isButton() && interaction.customId === '43064211a055448f9f9bb4dc85c40eec') {
-            // Replaces the ephemeral confirmation prompt with a simple cancellation message
-            await interaction.update({ 
-                content: "Role deletion cancelled.", 
-                components: [], 
-                flags: [] 
-            });
         }
 
         // 4. --- MODAL SUBMISSION HANDLER ---
