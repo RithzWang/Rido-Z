@@ -224,10 +224,10 @@ module.exports = {
 
             // Format color texts appropriately based on Solid vs Gradient
             const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
+            let formattedColorText = `_Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\``;
             
             if (isGradient && userRoleData.secondaryColor) {
-                formattedColorText = `_Primary Colour_: \`${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`${userRoleData.secondaryColor.toUpperCase()}\``;
+                formattedColorText = `_Primary Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`#${userRoleData.secondaryColor.toUpperCase()}\``;
             }
 
             const confirmationComponents = [
