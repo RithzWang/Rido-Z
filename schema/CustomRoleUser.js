@@ -6,7 +6,9 @@ const userRoleSchema = new Schema({
     roleId: { type: String, required: true },
     style: { type: String, enum: ['solid', 'gradient'], default: 'solid' },
     primaryColor: { type: String, default: null },
-    secondaryColor: { type: String, default: null }
+    secondaryColor: { type: String, default: null },
+    lastUpdatedAt: { type: Date }
+
 });
 
 module.exports = model('CustomRoleUser', userRoleSchema);
