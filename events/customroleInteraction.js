@@ -47,7 +47,7 @@ async function sendRoleModal(interaction, style) {
     // 1. Custom Role Name (Using LabelBuilder for the description)
     const nameInput = new TextInputBuilder()
         .setCustomId('role_name')
-        .setPlaceholder('Enter')
+        .setPlaceholder('Tap to type...')
         .setStyle(TextInputStyle.Short)
         .setRequired(!hasExistingRole); 
 
