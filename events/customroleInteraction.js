@@ -17,8 +17,8 @@ const {
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
-const ANCHOR_ROLE_ID = '1528641882089984121';
-const BOUNDARY_ROLE_ID = '880828923678707712'; // Documented for hierarchy reference
+const ANCHOR_ROLE_ID = '894154962685284362';
+const BOUNDARY_ROLE_ID = '1552136781984436264'; // Documented for hierarchy reference
 
 // Cooldown Configuration
 const EXEMPT_USERS = ['83774127560300962', '1469705529306910753'];
@@ -234,15 +234,18 @@ module.exports = {
             } catch (err) { }
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
-            if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
+            const boundaryRole = interaction.guild.roles.cache.get(BOUNDARY_ROLE_ID);
+            if (!anchorRole || !boundaryRole) return interaction.editReply("Error: Anchor or boundary role not found in the server.");
 
             // Determine tag based on booster vs bypass status
             const isBooster = interaction.member.premiumSince !== null;
             const prefix = isBooster ? '[booster]' : '[custom]';
 
+            // Boosters slot right below the top anchor; Bypass users slot right above the bottom boundary
+            const targetPosition = isBooster ? anchorRole.position - 1 : boundaryRole.position + 1;
+
             let formattedName = null;
             if (rawName && rawName.trim().length > 0) {
-                // Strip existing prefixes so duplicate tags are avoided
                 const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '');
                 formattedName = `${prefix} ${cleanName}`;
             }
@@ -263,7 +266,8 @@ module.exports = {
                         const editPayload = {
                             colors: customColorsPayload,
                             icon: iconBufferOrUrl || null,
-                            permissions: []
+                            permissions: [],
+                            position: targetPosition // Dynamically updates hierarchy if a user boosts later
                         };
 
                         if (formattedName) {
@@ -275,7 +279,6 @@ module.exports = {
                         userRoleData.style = newStyle;
                         userRoleData.primaryColor = primaryColorHex;
                         userRoleData.secondaryColor = secondaryColorHex;
-                        // Record the time of this update
                         userRoleData.lastUpdatedAt = new Date();
                         await userRoleData.save();
 
@@ -283,13 +286,12 @@ module.exports = {
                     }
                 }
 
-                // Create the role positioned exactly beneath the anchor (which sits above the boundary)
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
                     icon: iconBufferOrUrl || null,
                     permissions: [],
-                    position: anchorRole.position - 1, 
+                    position: targetPosition, 
                     reason: `Custom role created by ${interaction.user.tag}`
                 });
 
@@ -302,7 +304,6 @@ module.exports = {
                     style: newStyle,
                     primaryColor: primaryColorHex,
                     secondaryColor: secondaryColorHex,
-                    // Record creation time to start the cooldown clock
                     lastUpdatedAt: new Date()
                 });
 
