@@ -12,9 +12,7 @@ const {
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
     SelectMenuOptionBuilder,
-    MessageFlags,
-    ButtonStyle,
-    ButtonBuilder
+    MessageFlags
 } = require('discord.js');
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
@@ -22,7 +20,7 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const ANCHOR_ROLE_ID = '894154962685284362';
 const BOUNDARY_ROLE_ID = '1552136781984436264'; 
 
-// Cooldown Configuration
+// Cooldown Configuration (Now using Role IDs)
 const EXEMPT_ROLES = ['878566116203589632', '1469705529306910753'];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -46,7 +44,7 @@ async function sendRoleModal(interaction, style) {
         .setCustomId(`modal_role_${style}`)
         .setTitle(`${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
 
-    // 1. Custom Role Name
+    // 1. Custom Role Name (Using LabelBuilder for the description)
     const nameInput = new TextInputBuilder()
         .setCustomId('role_name')
         .setPlaceholder('Tap to type...')
@@ -56,7 +54,7 @@ async function sendRoleModal(interaction, style) {
     const nameLabel = new LabelBuilder()
         .setLabel('Custom Role Name')
         .setDescription(hasExistingRole ? 'Leave Blank To Keep Current Name' : 'Enter Your Custom Role Name')
-        .setTextInputComponent(nameInput); 
+        .setTextInputComponent(nameInput); // Binds the text input to the label
 
     // 2. Text Display for Basic Colours
     const colorsText = new TextDisplayBuilder().setContent(
@@ -76,6 +74,7 @@ async function sendRoleModal(interaction, style) {
         .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
         .setTextInputComponent(primaryColorInput);
 
+    // Add the first 3 components to the modal in exact order
     modal.addLabelComponents(nameLabel);
     modal.addTextDisplayComponents(colorsText);
     modal.addLabelComponents(primaryColorLabel);
@@ -111,6 +110,7 @@ async function sendRoleModal(interaction, style) {
 
     return interaction.showModal(modal);
 }
+
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -211,63 +211,16 @@ module.exports = {
             return sendRoleModal(interaction, selectedStyle);
         }
 
-        // 3. --- INITIAL DELETE BUTTON HANDLER (Sends Confirmation Prompt) ---
+        // 3. --- DELETE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === 'a1e2a2b3a3044a5ab488f7d5e2558a8c') {
             await interaction.deferReply({ ephemeral: true });
-
-            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
-
-            // Block if no document, or if roleId already starts with "deleted_"
-            if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
-                return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
-            }
-
-            // Format color texts appropriately based on Solid vs Gradient
-            const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
-            
-            if (isGradient && userRoleData.secondaryColor) {
-                formattedColorText = `_Primary Colour_: \`£${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`#${userRoleData.secondaryColor.toUpperCase()}\``;
-            }
-
-            const confirmationComponents = [
-                new ContainerBuilder()
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## <:trash:1551935964866150470> Delete Custom Role"),
-                    )
-                    .addSeparatorComponents(
-                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
-                    )
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
-                    )
-                    .addActionRowComponents(
-                        new ActionRowBuilder()
-                            .addComponents(
-                                new ButtonBuilder()
-                                    .setStyle(ButtonStyle.Success)
-                                    .setLabel("Yes, I am sure")
-                                    .setEmoji({ name: "✔️" })
-                                    .setCustomId("c724df3843ac4653b315b3ceec12d4a0"),
-                            ),
-                    ),
-            ];
-
-            return interaction.editReply({ 
-                components: confirmationComponents, 
-                flags: [MessageFlags.IsComponentsV2] 
-            });
-        }
-
-        // 3b. --- CONFIRM DELETE (User clicked "Yes, I am sure") ---
-        if (interaction.isButton() && interaction.customId === 'c724df3843ac4653b315b3ceec12d4a0') {
-            await interaction.deferUpdate(); // Acknowledges button click without sending a new message
 
             try {
                 const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
+                // Block if no document, or if roleId already starts with "deleted_"
                 if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
-                    return interaction.editReply({ content: "<:no:1551365724314935296> You do not have a custom role to delete.", components: [], flags: [] });
+                    return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
                 }
 
                 const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
@@ -279,26 +232,17 @@ module.exports = {
                     }
                 }
 
-                // Append unique prefix to avoid Mongoose unique validation errors
+                // FIX: Use a unique placeholder string so Mongoose doesn't throw a validation/unique error
                 userRoleData.roleId = `deleted_${interaction.user.id}`; 
-                userRoleData.lastUpdatedAt = new Date(); // Resets their cooldown
+                userRoleData.lastUpdatedAt = new Date();
                 
                 await userRoleData.save();
 
-                // Passing empty components array clears the V2 buttons from the UI
-                return interaction.editReply({ 
-                    content: "<:yes:1551365722729484370> Successfully deleted your custom role!", 
-                    components: [], 
-                    flags: [] 
-                });
+                return interaction.editReply("<:yes:1551365722729484370> Successfully deleted your custom role!");
 
             } catch (error) {
                 console.error("Database Save Error during deletion:", error);
-                return interaction.editReply({ 
-                    content: "<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.", 
-                    components: [], 
-                    flags: [] 
-                });
+                return interaction.editReply("<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.");
             }
         }
 
