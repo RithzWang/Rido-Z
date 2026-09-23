@@ -20,8 +20,8 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const ANCHOR_ROLE_ID = '894154962685284362';
 const BOUNDARY_ROLE_ID = '1552136781984436264'; 
 
-// Cooldown Configuration
-const EXEMPT_USERS = ['83774127560300962', '1469705529306910753'];
+// Cooldown Configuration (Now using Role IDs)
+const EXEMPT_ROLES = ['878566116203589632', '1469705529306910753'];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 async function checkEnhancedRolePerk(guild) {
@@ -111,11 +111,10 @@ module.exports = {
             // --- 24-HOUR COOLDOWN CHECK ---
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
             
-            // TERMINAL DEBUGGING: Check your bot's console when you click the button!
-            console.log(`[DEBUG] Clicked By ID: "${interaction.user.id}"`);
-            console.log(`[DEBUG] Is Exempt? ${EXEMPT_USERS.includes(interaction.user.id)}`);
+            // Checks if the member has any of the exempt roles
+            const isExempt = interaction.member.roles.cache.some(role => EXEMPT_ROLES.includes(role.id));
 
-            if (userRoleData && !EXEMPT_USERS.includes(interaction.user.id)) {
+            if (userRoleData && !isExempt) {
                 const lastUpdated = userRoleData.lastUpdatedAt ? new Date(userRoleData.lastUpdatedAt).getTime() : 0;
                 const now = Date.now();
                 
@@ -190,14 +189,13 @@ module.exports = {
             return sendRoleModal(interaction, selectedStyle);
         }
 
-           // 3. --- DELETE BUTTON HANDLER ---
+        // 3. --- DELETE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === 'a1e2a2b3a3044a5ab488f7d5e2558a8c') {
             await interaction.deferReply({ ephemeral: true });
 
             try {
                 const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
-                // Check if they have a document and a valid role ID attached
                 if (!userRoleData || !userRoleData.roleId || userRoleData.roleId === "") {
                     return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
                 }
@@ -208,11 +206,9 @@ module.exports = {
                         await targetRole.delete("User deleted their custom role via panel");
                     } catch (error) {
                         console.error("Discord API Failed to delete role:", error);
-                        // We continue execution even if Discord fails, so we can clear the database
                     }
                 }
 
-                // Use an empty string instead of null to bypass strict Mongoose string requirements
                 userRoleData.roleId = ""; 
                 userRoleData.lastUpdatedAt = new Date();
                 
@@ -225,7 +221,6 @@ module.exports = {
                 return interaction.editReply("<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.");
             }
         }
-
 
         // 4. --- MODAL SUBMISSION HANDLER ---
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
