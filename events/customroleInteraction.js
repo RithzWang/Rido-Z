@@ -166,7 +166,7 @@ module.exports = {
             const styleSelectorComponents = [
                 new ContainerBuilder()
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Custom Style"),
+                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Custom Role Style"),
                     )
                     .addSeparatorComponents(
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
