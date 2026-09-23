@@ -18,7 +18,7 @@ const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
 const ANCHOR_ROLE_ID = '894154962685284362';
-const BOUNDARY_ROLE_ID = '1552136781984436264'; // Documented for hierarchy reference
+const BOUNDARY_ROLE_ID = '1552136781984436264'; 
 
 // Cooldown Configuration
 const EXEMPT_USERS = ['83774127560300962', '1469705529306910753'];
@@ -36,21 +36,8 @@ async function checkEnhancedRolePerk(guild) {
 async function sendRoleModal(interaction, style) {
     const isGradient = style === 'gradient';
     const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
-    const hasExistingRole = !!userRoleData;
-
-    // --- 24-HOUR COOLDOWN CHECK ---
-    if (hasExistingRole && !EXEMPT_USERS.includes(interaction.user.id)) {
-        const lastUpdated = userRoleData.lastUpdatedAt ? new Date(userRoleData.lastUpdatedAt).getTime() : 0;
-        const now = Date.now();
-        
-        if (now - lastUpdated < ONE_DAY_MS) {
-            const nextAvailable = Math.floor((lastUpdated + ONE_DAY_MS) / 1000);
-            return interaction.reply({
-                content: `<:no:1551365724314935296> YOU CAN ONLY UPDATE YOUR CUSTOM ROLE ONCE A DAY! YOU CAN UPDATE IT AGAIN <t:${nextAvailable}:R>.`,
-                ephemeral: true
-            });
-        }
-    }
+    
+    const hasExistingRole = !!(userRoleData && userRoleData.roleId);
 
     const modal = new ModalBuilder()
         .setCustomId(`modal_role_${style}`)
@@ -92,7 +79,7 @@ async function sendRoleModal(interaction, style) {
         const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
         const iconLabel = new LabelBuilder()
             .setLabel('Custom Role Icon')
-            .setDescription('This icon will be displayed next to your name (optional)')
+            .setDescription('This icon will be displayed next to your name')
             .setFileUploadComponent(iconUpload);
         
         modal.addLabelComponents(iconLabel);
@@ -116,9 +103,29 @@ module.exports = {
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
                 return interaction.reply({ 
-                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", 
+                    content: "<:no:1551365724314935296> You need to boost our server with Discord Nitro first!!", 
                     ephemeral: true 
                 });
+            }
+
+            // --- 24-HOUR COOLDOWN CHECK ---
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            
+            // TERMINAL DEBUGGING: Check your bot's console when you click the button!
+            console.log(`[DEBUG] Clicked By ID: "${interaction.user.id}"`);
+            console.log(`[DEBUG] Is Exempt? ${EXEMPT_USERS.includes(interaction.user.id)}`);
+
+            if (userRoleData && !EXEMPT_USERS.includes(interaction.user.id)) {
+                const lastUpdated = userRoleData.lastUpdatedAt ? new Date(userRoleData.lastUpdatedAt).getTime() : 0;
+                const now = Date.now();
+                
+                if (now - lastUpdated < ONE_DAY_MS) {
+                    const nextAvailable = Math.floor((lastUpdated + ONE_DAY_MS) / 1000);
+                    return interaction.reply({
+                        content: `<:no:1551365724314935296> You can only update or recreate your custom role once a day! You can do this again <t:${nextAvailable}:R>.`,
+                        ephemeral: true
+                    });
+                }
             }
 
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
@@ -174,7 +181,7 @@ module.exports = {
                 const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
                 if (!hasEnhancedRoleStyle) {
                     return interaction.reply({ 
-                        content: '<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY', 
+                        content: '<:no:1551365724314935296> Sorry, the **GRADIENT** role style is not currently available', 
                         ephemeral: true 
                     });
                 }
@@ -189,8 +196,8 @@ module.exports = {
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
-            if (!userRoleData) {
-                return interaction.editReply("<:no:1551365724314935296> YOU DON’T HAVE A CUSTOM ROLE YET");
+            if (!userRoleData || !userRoleData.roleId) {
+                return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
             }
 
             const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
@@ -202,8 +209,11 @@ module.exports = {
                 }
             }
 
-            await UserRoleDB.deleteOne({ guildId: interaction.guildId, userId: interaction.user.id });
-            return interaction.editReply("<:yes:1551365722729484370> SUCCESSFULLY DELETED YOUR CUSTOM ROLE!");
+            userRoleData.roleId = null;
+            userRoleData.lastUpdatedAt = new Date();
+            await userRoleData.save();
+
+            return interaction.editReply("<:yes:1551365722729484370> Successfully deleted your custom role!");
         }
 
         // 4. --- MODAL SUBMISSION HANDLER ---
@@ -215,7 +225,7 @@ module.exports = {
             if (newStyle === 'gradient') {
                 const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
                 if (!hasEnhancedRoleStyle) {
-                    return interaction.editReply('<:no:1551365724314935296> SORRY, THE **GRADIENT** ROLE STYLE IS NOT AVAILABLE CURRENTLY');
+                    return interaction.editReply('<:no:1551365724314935296> Sorry, the **GRADIENT** role style is not currently available');
                 }
             }
 
@@ -237,11 +247,8 @@ module.exports = {
             const boundaryRole = interaction.guild.roles.cache.get(BOUNDARY_ROLE_ID);
             if (!anchorRole || !boundaryRole) return interaction.editReply("Error: Anchor or boundary role not found in the server.");
 
-            // Determine tag based on booster vs bypass status
             const isBooster = interaction.member.premiumSince !== null;
             const prefix = isBooster ? '[booster]' : '[custom]';
-
-            // Boosters slot right below the top anchor; Bypass users slot right above the bottom boundary
             const targetPosition = isBooster ? anchorRole.position - 1 : boundaryRole.position + 1;
 
             let formattedName = null;
@@ -257,33 +264,34 @@ module.exports = {
             };
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            
             let targetRole;
+            if (userRoleData && userRoleData.roleId) {
+                targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            }
 
             try {
-                if (userRoleData) {
-                    targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
-                    if (targetRole) {
-                        const editPayload = {
-                            colors: customColorsPayload,
-                            icon: iconBufferOrUrl || null,
-                            permissions: [],
-                            position: targetPosition // Dynamically updates hierarchy if a user boosts later
-                        };
+                if (targetRole) {
+                    const editPayload = {
+                        colors: customColorsPayload,
+                        icon: iconBufferOrUrl || null,
+                        permissions: [],
+                        position: targetPosition 
+                    };
 
-                        if (formattedName) {
-                            editPayload.name = formattedName;
-                        }
-                        
-                        await targetRole.edit(editPayload);
-
-                        userRoleData.style = newStyle;
-                        userRoleData.primaryColor = primaryColorHex;
-                        userRoleData.secondaryColor = secondaryColorHex;
-                        userRoleData.lastUpdatedAt = new Date();
-                        await userRoleData.save();
-
-                        return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY UPDATED YOUR CUSTOM ROLE TO **${newStyle.toUpperCase()}**: ${targetRole}`);
+                    if (formattedName) {
+                        editPayload.name = formattedName;
                     }
+                    
+                    await targetRole.edit(editPayload);
+
+                    userRoleData.style = newStyle;
+                    userRoleData.primaryColor = primaryColorHex;
+                    userRoleData.secondaryColor = secondaryColorHex;
+                    userRoleData.lastUpdatedAt = new Date();
+                    await userRoleData.save();
+
+                    return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role to **${newStyle.toUpperCase()}**: ${targetRole}`);
                 }
 
                 targetRole = await interaction.guild.roles.create({
@@ -297,21 +305,30 @@ module.exports = {
 
                 await interaction.member.roles.add(targetRole);
                 
-                await UserRoleDB.create({
-                    guildId: interaction.guildId,
-                    userId: interaction.user.id,
-                    roleId: targetRole.id,
-                    style: newStyle,
-                    primaryColor: primaryColorHex,
-                    secondaryColor: secondaryColorHex,
-                    lastUpdatedAt: new Date()
-                });
+                if (userRoleData) {
+                    userRoleData.roleId = targetRole.id;
+                    userRoleData.style = newStyle;
+                    userRoleData.primaryColor = primaryColorHex;
+                    userRoleData.secondaryColor = secondaryColorHex;
+                    userRoleData.lastUpdatedAt = new Date();
+                    await userRoleData.save();
+                } else {
+                    await UserRoleDB.create({
+                        guildId: interaction.guildId,
+                        userId: interaction.user.id,
+                        roleId: targetRole.id,
+                        style: newStyle,
+                        primaryColor: primaryColorHex,
+                        secondaryColor: secondaryColorHex,
+                        lastUpdatedAt: new Date()
+                    });
+                }
 
-                return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY CREATED YOUR CUSTOM ROLE AS ${targetRole}`);
+                return interaction.editReply(`<:yes:1551365722729484370> Successfully created your custom role as ${targetRole}`);
 
             } catch (error) {
                 console.error("Custom Role Error:", error);
-                return interaction.editReply("<:no:1551365724314935296> PLEASE ENSURE THE **HEX** FORMAT IS CORRECT!");
+                return interaction.editReply("<:no:1551365724314935296> Please ensure the **HEX** format is correct!");
             }
         }
     }
