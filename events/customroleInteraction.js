@@ -190,31 +190,42 @@ module.exports = {
             return sendRoleModal(interaction, selectedStyle);
         }
 
-        // 3. --- DELETE BUTTON HANDLER ---
+           // 3. --- DELETE BUTTON HANDLER ---
         if (interaction.isButton() && interaction.customId === 'a1e2a2b3a3044a5ab488f7d5e2558a8c') {
             await interaction.deferReply({ ephemeral: true });
 
-            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            try {
+                const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
-            if (!userRoleData || !userRoleData.roleId) {
-                return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
-            }
-
-            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
-            if (targetRole) {
-                try {
-                    await targetRole.delete("User deleted their custom role via panel");
-                } catch (error) {
-                    console.error("Failed to delete role:", error);
+                // Check if they have a document and a valid role ID attached
+                if (!userRoleData || !userRoleData.roleId || userRoleData.roleId === "") {
+                    return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
                 }
+
+                const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+                if (targetRole) {
+                    try {
+                        await targetRole.delete("User deleted their custom role via panel");
+                    } catch (error) {
+                        console.error("Discord API Failed to delete role:", error);
+                        // We continue execution even if Discord fails, so we can clear the database
+                    }
+                }
+
+                // Use an empty string instead of null to bypass strict Mongoose string requirements
+                userRoleData.roleId = ""; 
+                userRoleData.lastUpdatedAt = new Date();
+                
+                await userRoleData.save();
+
+                return interaction.editReply("<:yes:1551365722729484370> Successfully deleted your custom role!");
+
+            } catch (error) {
+                console.error("Database Save Error during deletion:", error);
+                return interaction.editReply("<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.");
             }
-
-            userRoleData.roleId = null;
-            userRoleData.lastUpdatedAt = new Date();
-            await userRoleData.save();
-
-            return interaction.editReply("<:yes:1551365722729484370> Successfully deleted your custom role!");
         }
+
 
         // 4. --- MODAL SUBMISSION HANDLER ---
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
