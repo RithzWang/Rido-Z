@@ -224,10 +224,10 @@ module.exports = {
 
             // Format color texts appropriately based on Solid vs Gradient
             const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `_Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\``;
+            let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
             
             if (isGradient && userRoleData.secondaryColor) {
-                formattedColorText = `_Primary Colour_: \`#${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`#${userRoleData.secondaryColor.toUpperCase()}\``;
+                formattedColorText = `_Primary Colour_: \`${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`${userRoleData.secondaryColor.toUpperCase()}\``;
             }
 
             const confirmationComponents = [
@@ -261,20 +261,55 @@ module.exports = {
 
         // 3b. --- CONFIRM DELETE (User clicked "Yes, I am sure") ---
         if (interaction.isButton() && interaction.customId === 'c724df3843ac4653b315b3ceec12d4a0') {
-            await interaction.deferUpdate(); // Acknowledges button click without sending a new message
-
+            
             try {
                 const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
                 if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
-                    return interaction.editReply({ 
-                        components: [
-                            new TextDisplayBuilder().setContent("<:no:1551365724314935296> You do not have a custom role to delete.")
-                        ], 
-                        flags: [MessageFlags.IsComponentsV2] 
+                    return interaction.reply({ 
+                        content: "<:no:1551365724314935296> You do not have a custom role to delete.", 
+                        ephemeral: true 
                     });
                 }
 
+                // Step 1: Disable the "Yes, I am sure" button immediately by modifying the existing prompt
+                const isGradient = userRoleData.style === 'gradient';
+                let formattedColorText = `_Colour_: \`${userRoleData.primaryColor.toUpperCase()}\``;
+                if (isGradient && userRoleData.secondaryColor) {
+                    formattedColorText = `_Primary Colour_: \`${userRoleData.primaryColor.toUpperCase()}\`\n_Secondary Colour_: \`${userRoleData.secondaryColor.toUpperCase()}\``;
+                }
+
+                const disabledComponents = [
+                    new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent("## <:trash:1551935964866150470> Delete Custom Role"),
+                        )
+                        .addSeparatorComponents(
+                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+                        )
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
+                        )
+                        .addActionRowComponents(
+                            new ActionRowBuilder()
+                                .addComponents(
+                                    new ButtonBuilder()
+                                        .setStyle(ButtonStyle.Success)
+                                        .setLabel("Yes, I am sure")
+                                        .setEmoji({ name: "✔️" })
+                                        .setCustomId("c724df3843ac4653b315b3ceec12d4a0")
+                                        .setDisabled(true) // Disable the button
+                                ),
+                        ),
+                ];
+
+                // .update() acknowledges the button press and modifies the prompt at the same time
+                await interaction.update({ 
+                    components: disabledComponents, 
+                    flags: [MessageFlags.IsComponentsV2] 
+                });
+
+                // Step 2: Delete the role from Discord
                 const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                 if (targetRole) {
                     try {
@@ -284,28 +319,33 @@ module.exports = {
                     }
                 }
 
-                // Append unique prefix to avoid Mongoose unique validation errors
+                // Step 3: Update database
                 userRoleData.roleId = `deleted_${interaction.user.id}`; 
-                userRoleData.lastUpdatedAt = new Date(); // Resets their cooldown
+                userRoleData.lastUpdatedAt = new Date();
                 
                 await userRoleData.save();
 
-                // Replaces V2 layout with a simple V2 TextDisplay success message
-                return interaction.editReply({ 
-                    components: [
-                        new TextDisplayBuilder().setContent("<:yes:1551365722729484370> Successfully deleted your custom role!")
-                    ], 
-                    flags: [MessageFlags.IsComponentsV2] 
+                // Step 4: Send the success message dynamically as a new ephemeral reply
+                return interaction.followUp({ 
+                    content: "<:yes:1551365722729484370> Successfully deleted your custom role!", 
+                    ephemeral: true 
                 });
 
             } catch (error) {
                 console.error("Database Save Error during deletion:", error);
-                return interaction.editReply({ 
-                    components: [
-                        new TextDisplayBuilder().setContent("<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.")
-                    ], 
-                    flags: [MessageFlags.IsComponentsV2] 
-                });
+                
+                // Fallback error messaging depending on if the button was already acknowledged
+                if (!interaction.replied && !interaction.deferred) {
+                    return interaction.reply({ 
+                        content: "<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.", 
+                        ephemeral: true 
+                    });
+                } else {
+                    return interaction.followUp({ 
+                        content: "<:no:1551365724314935296> An error occurred while deleting your role from the database. Please contact an admin.", 
+                        ephemeral: true 
+                    });
+                }
             }
         }
 
