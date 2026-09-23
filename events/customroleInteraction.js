@@ -20,6 +20,10 @@ const UserRoleDB = require('../schema/CustomRoleUser');
 const ANCHOR_ROLE_ID = '1528641882089984121';
 const BOUNDARY_ROLE_ID = '880828923678707712'; // Documented for hierarchy reference
 
+// Cooldown Configuration
+const EXEMPT_USERS = ['83774127560300962', '1469705529306910753'];
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 async function checkEnhancedRolePerk(guild) {
     try {
         const fetchedGuild = await guild.fetch();
@@ -33,6 +37,20 @@ async function sendRoleModal(interaction, style) {
     const isGradient = style === 'gradient';
     const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
     const hasExistingRole = !!userRoleData;
+
+    // --- 24-HOUR COOLDOWN CHECK ---
+    if (hasExistingRole && !EXEMPT_USERS.includes(interaction.user.id)) {
+        const lastUpdated = userRoleData.lastUpdatedAt ? new Date(userRoleData.lastUpdatedAt).getTime() : 0;
+        const now = Date.now();
+        
+        if (now - lastUpdated < ONE_DAY_MS) {
+            const nextAvailable = Math.floor((lastUpdated + ONE_DAY_MS) / 1000);
+            return interaction.reply({
+                content: `<:no:1551365724314935296> YOU CAN ONLY UPDATE YOUR CUSTOM ROLE ONCE A DAY! YOU CAN UPDATE IT AGAIN <t:${nextAvailable}:R>.`,
+                ephemeral: true
+            });
+        }
+    }
 
     const modal = new ModalBuilder()
         .setCustomId(`modal_role_${style}`)
@@ -50,6 +68,8 @@ async function sendRoleModal(interaction, style) {
         .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
         .setPlaceholder('Ex: #ffffff, #000001')
         .setStyle(TextInputStyle.Short)
+        .setMinLength(4)
+        .setMaxLength(7)
         .setRequired(true);
 
     modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
@@ -61,6 +81,8 @@ async function sendRoleModal(interaction, style) {
             .setLabel('Custom Role Secondary Colour (HEX)')
             .setPlaceholder('Ex: #ffffff, #000001')
             .setStyle(TextInputStyle.Short)
+            .setMinLength(4)
+            .setMaxLength(7)
             .setRequired(true);
         modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
     }
@@ -94,7 +116,7 @@ module.exports = {
 
             if (!isBooster && !hasBypassRole && !isBypassUser) {
                 return interaction.reply({ 
-                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SEEVER WITH DISCORD NITRO FIRST!", 
+                    content: "<:no:1551365724314935296> YOU NEED TO BOOST OUR SERVER WITH DISCORD NITRO FIRST!", 
                     ephemeral: true 
                 });
             }
@@ -214,12 +236,15 @@ module.exports = {
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             if (!anchorRole) return interaction.editReply("Error: Anchor role not found in the server.");
 
-            // Construct the strictly formatted "(custom) [name]" layout
+            // Determine tag based on booster vs bypass status
+            const isBooster = interaction.member.premiumSince !== null;
+            const prefix = isBooster ? '[booster]' : '[custom]';
+
             let formattedName = null;
             if (rawName && rawName.trim().length > 0) {
-                // Remove existing "(custom) " if the user manually typed it to avoid duplicates
-                const cleanName = rawName.replace(/^\(custom\)\s*/i, '');
-                formattedName = `(custom) ${cleanName}`;
+                // Strip existing prefixes so duplicate tags are avoided
+                const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '');
+                formattedName = `${prefix} ${cleanName}`;
             }
 
             const customColorsPayload = {
@@ -235,10 +260,10 @@ module.exports = {
                 if (userRoleData) {
                     targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                     if (targetRole) {
-                        
                         const editPayload = {
                             colors: customColorsPayload,
-                            icon: iconBufferOrUrl || null
+                            icon: iconBufferOrUrl || null,
+                            permissions: []
                         };
 
                         if (formattedName) {
@@ -250,6 +275,8 @@ module.exports = {
                         userRoleData.style = newStyle;
                         userRoleData.primaryColor = primaryColorHex;
                         userRoleData.secondaryColor = secondaryColorHex;
+                        // Record the time of this update
+                        userRoleData.lastUpdatedAt = new Date();
                         await userRoleData.save();
 
                         return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY UPDATED YOUR CUSTOM ROLE TO **${newStyle.toUpperCase()}**: ${targetRole}`);
@@ -258,9 +285,10 @@ module.exports = {
 
                 // Create the role positioned exactly beneath the anchor (which sits above the boundary)
                 targetRole = await interaction.guild.roles.create({
-                    name: formattedName || '(custom) Custom Role',
+                    name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
                     icon: iconBufferOrUrl || null,
+                    permissions: [],
                     position: anchorRole.position - 1, 
                     reason: `Custom role created by ${interaction.user.tag}`
                 });
@@ -273,7 +301,9 @@ module.exports = {
                     roleId: targetRole.id,
                     style: newStyle,
                     primaryColor: primaryColorHex,
-                    secondaryColor: secondaryColorHex
+                    secondaryColor: secondaryColorHex,
+                    // Record creation time to start the cooldown clock
+                    lastUpdatedAt: new Date()
                 });
 
                 return interaction.editReply(`<:yes:1551365722729484370> SUCCESSFULLY CREATED YOUR CUSTOM ROLE AS ${targetRole}`);
