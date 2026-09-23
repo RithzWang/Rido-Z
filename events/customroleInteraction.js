@@ -258,7 +258,7 @@ module.exports = {
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`Are You Sure You Want To Delete <@&${userRoleData.roleId}> Role?\n${formattedColorText}`),
+                        new TextDisplayBuilder().setContent(`-# _Role_: <@&${userRoleData.roleId}>\n${formattedColorText}`),
                     )
                     .addActionRowComponents(
                         new ActionRowBuilder()
