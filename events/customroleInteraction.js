@@ -44,37 +44,59 @@ async function sendRoleModal(interaction, style) {
         .setCustomId(`modal_role_${style}`)
         .setTitle(`Configure ${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
 
+    // 1. Custom Role Name (Using LabelBuilder for the description)
     const nameInput = new TextInputBuilder()
         .setCustomId('role_name')
-        .setLabel('Custom Role Name')
-        .setPlaceholder(hasExistingRole ? 'Leave blank to keep current name' : 'Enter...')
+        .setPlaceholder('Enter')
         .setStyle(TextInputStyle.Short)
         .setRequired(!hasExistingRole); 
 
-    const primaryColor = new TextInputBuilder()
+    const nameLabel = new LabelBuilder()
+        .setLabel('Custom Role Name')
+        .setDescription(hasExistingRole ? 'Leave blank to keep current name' : 'Enter your custom role name')
+        .setTextInputComponent(nameInput); // Binds the text input to the label
+
+    // 2. Text Display for Basic Colours
+    const colorsText = new TextDisplayBuilder().setContent(
+        '**Basic Colours**\n-# Black : #000001\n-# White : #FFFFFF\n-# Red : #FF0000\n-# Blue : #0000FF\n-# Green : #00FF00\n-# Yellow: #FFFF00'
+    );
+
+    // 3. Primary Colour Input
+    const primaryColorInput = new TextInputBuilder()
         .setCustomId('primary_color')
-        .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
-        .setPlaceholder('Ex: #ffffff, #000001')
+        .setPlaceholder('Enter')
         .setStyle(TextInputStyle.Short)
         .setMinLength(4)
         .setMaxLength(7)
         .setRequired(true);
 
-    modal.addComponents(new ActionRowBuilder().addComponents(nameInput));
-    modal.addComponents(new ActionRowBuilder().addComponents(primaryColor));
+    const primaryColorLabel = new LabelBuilder()
+        .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
+        .setTextInputComponent(primaryColorInput);
 
+    // Add the first 3 components to the modal in exact order
+    modal.addLabelComponents(nameLabel);
+    modal.addTextDisplayComponents(colorsText);
+    modal.addLabelComponents(primaryColorLabel);
+
+    // 4. Secondary Colour Input (Only if Gradient)
     if (isGradient) {
-        const secondaryColor = new TextInputBuilder()
+        const secondaryColorInput = new TextInputBuilder()
             .setCustomId('secondary_color')
-            .setLabel('Custom Role Secondary Colour (HEX)')
-            .setPlaceholder('Ex: #ffffff, #000001')
+            .setPlaceholder('Enter')
             .setStyle(TextInputStyle.Short)
             .setMinLength(4)
             .setMaxLength(7)
             .setRequired(true);
-        modal.addComponents(new ActionRowBuilder().addComponents(secondaryColor));
+
+        const secondaryColorLabel = new LabelBuilder()
+            .setLabel('Custom Role Secondary Colour (HEX)')
+            .setTextInputComponent(secondaryColorInput);
+            
+        modal.addLabelComponents(secondaryColorLabel);
     }
 
+    // 5. Custom Icon Upload (Only if server has the perk)
     const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
     if (hasRoleIcons) {
         const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
@@ -88,6 +110,7 @@ async function sendRoleModal(interaction, style) {
 
     return interaction.showModal(modal);
 }
+
 
 module.exports = {
     name: Events.InteractionCreate,
