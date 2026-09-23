@@ -11,11 +11,12 @@ const {
     SeparatorBuilder,
     SeparatorSpacingSize,
     StringSelectMenuBuilder,
-    SelectMenuOptionBuilder,
+    StringSelectMenuOptionBuilder, // <--- Change this here
     MessageFlags,
     ButtonStyle,
     ButtonBuilder
 } = require('discord.js');
+
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
 
@@ -173,11 +174,11 @@ module.exports = {
                                     .setCustomId("7961861e646f4b8f9acccc9767c973ff")
                                     .setPlaceholder("Solid & Gradient")
                                     .addOptions(
-                                        new SelectMenuOptionBuilder()
+                                        new StringSelectMenuOptionBuilder()
                                             .setLabel("Solid")
                                             .setValue("3edc1c1c1bee48f6eac26b9555e5a408")
                                             .setEmoji({ name: "1️⃣" }),
-                                        new SelectMenuOptionBuilder()
+                                        new StringSelectMenuOptionBuilder()
                                             .setLabel("Gradient")
                                             .setValue("5ab448a89aa04452b6f1276f6853296c")
                                             .setEmoji({ name: "2️⃣" })
