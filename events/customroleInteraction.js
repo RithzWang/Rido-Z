@@ -58,7 +58,7 @@ async function sendRoleModal(interaction, style) {
 
     // 2. Text Display for Basic Colours
     const colorsText = new TextDisplayBuilder().setContent(
-        'Basic Colours\n-# **Black** : #000001, **White** : #FFFFFF\n-# **Red** : #FF0000, **Yellow** : #FFFF00\n-# **Blue** : #0000FF, **Green** : #00FF00'
+        'Basic Colours\n-# <:yes:1528709597647470615> **Black** : #000001, **White** : #FFFFFF\n-# **Red** : #FF0000, **Yellow** : #FFFF00\n-# **Blue** : #0000FF, **Green** : #00FF00'
     );
 
     // 3. Primary Colour Input
