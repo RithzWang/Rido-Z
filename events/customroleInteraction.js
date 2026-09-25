@@ -4,7 +4,6 @@ const {
     TextInputBuilder, 
     TextInputStyle, 
     ActionRowBuilder, 
-    FileUploadBuilder, 
     LabelBuilder,
     ContainerBuilder,
     TextDisplayBuilder,
@@ -35,6 +34,30 @@ function formatDiscordColor(hexString) {
         clean = clean.split('').map(c => c + c).join(''); 
     }
     return `#${clean.toUpperCase()}`; 
+}
+
+// Helper to parse URLs or Custom Emojis into a direct image link
+function parseIconInput(input) {
+    if (!input) return null;
+    input = input.trim();
+    
+    // Direct URL check
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+        return input;
+    }
+    
+    // Custom Emoji check (e.g., <:name:id> or <a:name:id>)
+    const emojiMatch = input.match(/<a?:[a-zA-Z0-9_]+:(\d+)>/);
+    if (emojiMatch) {
+        return `https://cdn.discordapp.com/emojis/${emojiMatch[1]}.png`;
+    }
+    
+    // Raw ID check
+    if (/^\d+$/.test(input)) {
+        return `https://cdn.discordapp.com/emojis/${input}.png`;
+    }
+    
+    return null;
 }
 
 async function checkEnhancedRolePerk(guild) {
@@ -143,16 +166,19 @@ async function sendRoleModal(interaction, style) {
         modal.addLabelComponents(secondaryColorLabel);
     }
 
-    // Custom Icon Upload (shown when guild is Level 2 boost, optional)
+    // Custom Icon Input (shown when guild is Level 2 boost, optional)
     const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
     if (hasRoleIcons) {
-        const iconUpload = new FileUploadBuilder()
-            .setCustomId('role_icon_file')
+        const iconInput = new TextInputBuilder()
+            .setCustomId('role_icon_input')
+            .setPlaceholder('https://... or <:emoji:id>')
+            .setStyle(TextInputStyle.Short)
             .setRequired(false);
+
         const iconLabel = new LabelBuilder()
             .setLabel('Custom Role Icon')
-            .setDescription('Upload an image under 256 KB. We recommend at least 64x64 pixels.')
-            .setFileUploadComponent(iconUpload);
+            .setDescription('Upload an image under 256 KB or pick a custom emoji from this server. We recommend at least 64x64 pixels. Members will see the icon for their highest role if they have multiple roles.')
+            .setTextInputComponent(iconInput);
 
         modal.addLabelComponents(iconLabel);
     }
@@ -323,11 +349,16 @@ module.exports = {
                 .setCustomId('modal_role_icon_edit')
                 .setTitle('Edit Role Icon');
 
-            const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
+            const iconInput = new TextInputBuilder()
+                .setCustomId('role_icon_input')
+                .setPlaceholder('https://... or <:emoji:id>')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
             const iconLabel = new LabelBuilder()
                 .setLabel('Custom Role Icon')
-                .setDescription('Upload an image under 256 KB. We recommend at least 64x64 pixels.')
-                .setFileUploadComponent(iconUpload);
+                .setDescription('Upload an image under 256 KB or pick a custom emoji from this server. We recommend at least 64x64 pixels. Members will see the icon for their highest role if they have multiple roles.')
+                .setTextInputComponent(iconInput);
 
             modal.addLabelComponents(iconLabel);
             return interaction.showModal(modal);
@@ -374,10 +405,10 @@ module.exports = {
             }
 
             const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `-# _Colour:_ \`${actualPrimaryColor}\``;
+            let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
             
             if (isGradient && actualSecondaryColor) {
-                formattedColorText = `-# _Primary Colour:_ \`${actualPrimaryColor}\`\n-# _Secondary Colour;_ \`${actualSecondaryColor}\``;
+                formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour;_ \`${actualSecondaryColor}\``;
             }
 
             const confirmationComponents = [
@@ -447,7 +478,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent(`-# _Role:_ <@&${userRoleData.roleId}>?\n${formattedColorText}`),
+                            new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
                         )
                         .addActionRowComponents(
                             new ActionRowBuilder()
@@ -543,14 +574,15 @@ module.exports = {
         if (interaction.isModalSubmit() && interaction.customId === 'modal_role_icon_edit') {
             await interaction.deferReply({ ephemeral: true });
 
-            let iconBufferOrUrl = null;
+            let rawIcon = null;
             try {
-                const fileAttachment = interaction.fields.getAttachment('role_icon_file');
-                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
+                rawIcon = interaction.fields.getTextInputValue('role_icon_input');
             } catch (err) { }
 
-            if (!iconBufferOrUrl) {
-                return interaction.editReply("<:no:1551365724314935296> No valid image file was uploaded.");
+            const parsedIconUrl = parseIconInput(rawIcon);
+
+            if (!parsedIconUrl) {
+                return interaction.editReply("<:no:1551365724314935296> Invalid image link or emoji provided.");
             }
 
             const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
@@ -564,7 +596,7 @@ module.exports = {
             }
 
             try {
-                await targetRole.edit({ icon: iconBufferOrUrl });
+                await targetRole.edit({ icon: parsedIconUrl });
 
                 userRoleData.lastUpdatedAt = new Date();
                 await userRoleData.save();
@@ -572,7 +604,7 @@ module.exports = {
                 const iconSuccessComponents = [
                     new SectionBuilder()
                         .setThumbnailAccessory(
-                            new ThumbnailBuilder().setURL(iconBufferOrUrl)
+                            new ThumbnailBuilder().setURL(parsedIconUrl)
                         )
                         .addTextDisplayComponents(
                             new TextDisplayBuilder().setContent(`<:yes:1551365722729484370> Successfully updated your ${targetRole} role to:`),
@@ -585,7 +617,7 @@ module.exports = {
                 });
             } catch (error) {
                 console.error("Role Icon Edit Error:", error);
-                return interaction.editReply("<:no:1551365724314935296> Failed to update role icon. Ensure the image is valid and the server has Level 2 Boost.");
+                return interaction.editReply("<:no:1551365724314935296> Failed to update role icon. Ensure the link/emoji is valid and the server has Level 2 Boost.");
             }
         }
 
@@ -614,11 +646,12 @@ module.exports = {
                 secondaryColorHex = interaction.fields.getTextInputValue('secondary_color');
             }
 
-            let iconBufferOrUrl = null;
+            let rawIcon = null;
             try {
-                const fileAttachment = interaction.fields.getAttachment('role_icon_file');
-                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
+                rawIcon = interaction.fields.getTextInputValue('role_icon_input');
             } catch (err) { }
+            
+            const parsedIconUrl = parseIconInput(rawIcon);
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             const boundaryRole = interaction.guild.roles.cache.get(BOUNDARY_ROLE_ID);
@@ -659,8 +692,8 @@ module.exports = {
                         editPayload.name = formattedName;
                     }
 
-                    if (iconBufferOrUrl) {
-                        editPayload.icon = iconBufferOrUrl;
+                    if (parsedIconUrl) {
+                        editPayload.icon = parsedIconUrl;
                     }
                     
                     await targetRole.edit(editPayload);
@@ -690,7 +723,7 @@ module.exports = {
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
-                    icon: iconBufferOrUrl || null,
+                    icon: parsedIconUrl || null,
                     permissions: [],
                     position: targetPosition, 
                     reason: `Custom role created by ${interaction.user.tag}`
@@ -721,7 +754,7 @@ module.exports = {
 
             } catch (error) {
                 console.error("Custom Role Error:", error);
-                return interaction.editReply("<:no:1551365724314935296> Please ensure the **HEX** format is correct!");
+                return interaction.editReply("<:no:1551365724314935296> Please ensure the **HEX** format is correct and any icon link/emoji is valid!");
             }
         }
     }
