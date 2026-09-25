@@ -49,7 +49,6 @@ module.exports = {
         if (!config) config = await ConfigDB.create({ guildId: interaction.guildId });
 
         const hasEnhancedRoleStyle = interaction.guild.features?.includes('ENHANCED_ROLE_COLORS');
-        const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
 
         // --- DASHBOARD (DB) ---
         if (subcommand === 'db') {
@@ -93,9 +92,8 @@ module.exports = {
             config.globalDisabled = isDisabled;
 
             const gradientEmoji = hasEnhancedRoleStyle ? '<:yes:1551365722729484370>' : '<:no:1551365724314935296>';
-            const iconEmoji = hasRoleIcons ? '<:yes:1551365722729484370>' : '<:no:1551365724314935296>';
 
-            const featuresText = `<:yes:1551365722729484370> Choose your own role name\n<:yes:1551365722729484370> Set any custom [HEX](<https://share.google/Vengh8rGw8wb4ddvK>) colour\n${gradientEmoji} Unlock Gradient\n${iconEmoji} Unlock Custom Icon`;
+            const featuresText = `<:yes:1551365722729484370> Choose your own role name\n<:yes:1551365722729484370> Set any custom [HEX](<https://share.google/Vengh8rGw8wb4ddvK>) colour\n${gradientEmoji} Unlock Gradient`;
 
             const containerComponents = [
                 new ContainerBuilder()
