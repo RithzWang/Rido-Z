@@ -118,12 +118,8 @@ async function sendRoleModal(interaction, style) {
         .setMaxLength(7)
         .setRequired(true);
 
-    const primaryColorLabelText = hasExistingRole
-        ? (isGradient ? 'New Custom Role Primary Colour (HEX)' : 'New Custom Role Colour (HEX)')
-        : (isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)');
-
     const primaryColorLabel = new LabelBuilder()
-        .setLabel(primaryColorLabelText)
+        .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
         .setTextInputComponent(primaryColorInput);
 
     modal.addLabelComponents(primaryColorLabel);
@@ -138,12 +134,8 @@ async function sendRoleModal(interaction, style) {
             .setMaxLength(7)
             .setRequired(true);
 
-        const secondaryColorLabelText = hasExistingRole
-            ? 'New Custom Role Secondary Colour (HEX)'
-            : 'Custom Role Secondary Colour (HEX)';
-
         const secondaryColorLabel = new LabelBuilder()
-            .setLabel(secondaryColorLabelText)
+            .setLabel('Custom Role Secondary Colour (HEX)')
             .setTextInputComponent(secondaryColorInput);
             
         modal.addLabelComponents(secondaryColorLabel);
@@ -269,7 +261,7 @@ module.exports = {
                 .setRequired(true);
 
             const nameLabel = new LabelBuilder()
-                .setLabel('New Custom Role Name')
+                .setLabel('Custom Role Name')
                 .setDescription('Enter your new custom role name')
                 .setTextInputComponent(nameInput);
 
@@ -317,7 +309,7 @@ module.exports = {
 
             const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
             const iconLabel = new LabelBuilder()
-                .setLabel('New Custom Role Icon')
+                .setLabel('Custom Role Icon')
                 .setDescription('Upload an image for your custom role icon')
                 .setFileUploadComponent(iconUpload);
 
@@ -425,9 +417,9 @@ module.exports = {
                 }
 
                 const isGradient = userRoleData.style === 'gradient';
-                let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
+                let formattedColorText = `-# _Colour:_ \`${actualPrimaryColor}\``;
                 if (isGradient && actualSecondaryColor) {
-                    formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour_: \`${actualSecondaryColor}\``;
+                    formattedColorText = `-# _Primary Colour:_ \`${actualPrimaryColor}\`\n-# _Secondary Colour:_ \`${actualSecondaryColor}\``;
                 }
 
                 const disabledComponents = [
@@ -439,7 +431,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
+                            new TextDisplayBuilder().setContent(`-# _Role:_ <@&${userRoleData.roleId}>\n${formattedColorText}`),
                         )
                         .addActionRowComponents(
                             new ActionRowBuilder()
