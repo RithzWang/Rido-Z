@@ -508,7 +508,7 @@ module.exports = {
             let formattedName = null;
             if (rawName && rawName.trim().length > 0) {
                 const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '');
-                formattedName = `${prefix}${cleanName}`;
+                formattedName = `${prefix} ${cleanName}`;
             }
 
             const customColorsPayload = {
