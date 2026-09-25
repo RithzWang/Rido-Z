@@ -87,24 +87,29 @@ async function sendRoleModal(interaction, style) {
         .setCustomId(`modal_role_${style}`)
         .setTitle(`${style.charAt(0).toUpperCase() + style.slice(1)} Role`);
 
-    // 1. Custom Role Name
-    const nameInput = new TextInputBuilder()
-        .setCustomId('role_name')
-        .setPlaceholder('Tap to type...')
-        .setStyle(TextInputStyle.Short)
-        .setRequired(!hasExistingRole); 
+    // Only include the Name field if the user is creating a role for the first time
+    if (!hasExistingRole) {
+        const nameInput = new TextInputBuilder()
+            .setCustomId('role_name')
+            .setPlaceholder('Tap to type...')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true); 
 
-    const nameLabel = new LabelBuilder()
-        .setLabel('Custom Role Name')
-        .setDescription(hasExistingRole ? 'Leave Blank To Keep Current Name' : 'Enter Your Custom Role Name')
-        .setTextInputComponent(nameInput); 
+        const nameLabel = new LabelBuilder()
+            .setLabel('Custom Role Name')
+            .setDescription('Enter Your Custom Role Name')
+            .setTextInputComponent(nameInput); 
 
-    // 2. Text Display for Basic Colours
+        modal.addLabelComponents(nameLabel);
+    }
+
+    // Text Display for Basic Colours
     const colorsText = new TextDisplayBuilder().setContent(
         'Basic Colours\n-# <:000001:1552333485492932608> **Black** : #000001 - <:FFFFFF:1552333488164708433> **White** : #FFFFFF\n-# <:FF0000:1552333490429894697> **Red** : #FF0000 - <:FFFF00:1552333492245893242> **Yellow** : #FFFF00\n-# <:0000FF:1552333494397567057> **Blue** : #0000FF - <:00FF00:1552333496523948112> **Green** : #00FF00'
     );
+    modal.addTextDisplayComponents(colorsText);
 
-    // 3. Primary Colour Input
+    // Primary Colour Input
     const primaryColorInput = new TextInputBuilder()
         .setCustomId('primary_color')
         .setPlaceholder('Tap to type...')
@@ -117,11 +122,9 @@ async function sendRoleModal(interaction, style) {
         .setLabel(isGradient ? 'Custom Role Primary Colour (HEX)' : 'Custom Role Colour (HEX)')
         .setTextInputComponent(primaryColorInput);
 
-    modal.addLabelComponents(nameLabel);
-    modal.addTextDisplayComponents(colorsText);
     modal.addLabelComponents(primaryColorLabel);
 
-    // 4. Secondary Colour Input
+    // Secondary Colour Input
     if (isGradient) {
         const secondaryColorInput = new TextInputBuilder()
             .setCustomId('secondary_color')
@@ -138,7 +141,7 @@ async function sendRoleModal(interaction, style) {
         modal.addLabelComponents(secondaryColorLabel);
     }
 
-    // 5. Custom Icon Upload
+    // Custom Icon Upload
     const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
     if (hasRoleIcons) {
         const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
@@ -191,7 +194,6 @@ module.exports = {
 
             const hasActiveRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
 
-            // If user already has an active custom role, show the Manage Role hub
             if (hasActiveRole) {
                 const manageComponents = [
                     new ContainerBuilder()
@@ -224,7 +226,6 @@ module.exports = {
                 });
             }
 
-            // For new users or users with deleted roles
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
             if (!hasEnhancedRoleStyle) {
                 return sendRoleModal(interaction, 'solid');
@@ -497,7 +498,12 @@ module.exports = {
                 }
             }
 
-            const rawName = interaction.fields.getTextInputValue('role_name');
+            // Safely get role_name if it exists in the modal (for first-time creators)
+            let rawName = null;
+            try {
+                rawName = interaction.fields.getTextInputValue('role_name');
+            } catch { }
+
             const primaryColorHex = interaction.fields.getTextInputValue('primary_color'); 
             
             let secondaryColorHex = null;
@@ -547,6 +553,7 @@ module.exports = {
                         position: targetPosition 
                     };
 
+                    // Only update name if it was explicitly submitted
                     if (formattedName) {
                         editPayload.name = formattedName;
                     }
