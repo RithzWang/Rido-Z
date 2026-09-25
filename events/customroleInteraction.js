@@ -14,7 +14,9 @@ const {
     StringSelectMenuOptionBuilder,
     MessageFlags,
     ButtonStyle,
-    ButtonBuilder
+    ButtonBuilder,
+    SectionBuilder,
+    ThumbnailBuilder
 } = require('discord.js');
 const ConfigDB = require('../schema/CustomRoleConfig');
 const UserRoleDB = require('../schema/CustomRoleUser');
@@ -139,6 +141,20 @@ async function sendRoleModal(interaction, style) {
             .setTextInputComponent(secondaryColorInput);
             
         modal.addLabelComponents(secondaryColorLabel);
+    }
+
+    // Custom Icon Upload (shown when guild is Level 2 boost, optional)
+    const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
+    if (hasRoleIcons) {
+        const iconUpload = new FileUploadBuilder()
+            .setCustomId('role_icon_file')
+            .setRequired(false);
+        const iconLabel = new LabelBuilder()
+            .setLabel('Custom Role Icon')
+            .setDescription('Upload an image under 256 KB. We recommend at least 64x64 pixels.')
+            .setFileUploadComponent(iconUpload);
+
+        modal.addLabelComponents(iconLabel);
     }
 
     return interaction.showModal(modal);
@@ -310,7 +326,7 @@ module.exports = {
             const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
             const iconLabel = new LabelBuilder()
                 .setLabel('Custom Role Icon')
-                .setDescription('Upload an image for your custom role icon')
+                .setDescription('Upload an image under 256 KB. We recommend at least 64x64 pixels.')
                 .setFileUploadComponent(iconUpload);
 
             modal.addLabelComponents(iconLabel);
@@ -513,7 +529,10 @@ module.exports = {
                 userRoleData.lastUpdatedAt = new Date();
                 await userRoleData.save();
 
-                return interaction.editReply(`<:yes:1551365722729484370> Successfully changed your custom role name to: **${formattedName}** (${targetRole})`);
+                let successText = `<:yes:1551365722729484370> Successfully updated your ${targetRole} role to:\n`;
+                successText += `-# _Role Name:_ ${formattedName}`;
+
+                return interaction.editReply(successText);
             } catch (error) {
                 console.error("Role Name Edit Error:", error);
                 return interaction.editReply("<:no:1551365724314935296> Failed to update role name. Please ensure the bot has proper permissions.");
@@ -550,7 +569,20 @@ module.exports = {
                 userRoleData.lastUpdatedAt = new Date();
                 await userRoleData.save();
 
-                return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role icon for ${targetRole}!`);
+                const iconSuccessComponents = [
+                    new SectionBuilder()
+                        .setThumbnailAccessory(
+                            new ThumbnailBuilder().setURL(iconBufferOrUrl)
+                        )
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent(`<:yes:1551365722729484370> Successfully updated your ${targetRole} role to:`),
+                        ),
+                ];
+
+                return interaction.editReply({ 
+                    components: iconSuccessComponents,
+                    flags: [MessageFlags.IsComponentsV2]
+                });
             } catch (error) {
                 console.error("Role Icon Edit Error:", error);
                 return interaction.editReply("<:no:1551365724314935296> Failed to update role icon. Ensure the image is valid and the server has Level 2 Boost.");
@@ -581,6 +613,12 @@ module.exports = {
             if (newStyle === 'gradient') {
                 secondaryColorHex = interaction.fields.getTextInputValue('secondary_color');
             }
+
+            let iconBufferOrUrl = null;
+            try {
+                const fileAttachment = interaction.fields.getAttachment('role_icon_file');
+                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
+            } catch (err) { }
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             const boundaryRole = interaction.guild.roles.cache.get(BOUNDARY_ROLE_ID);
@@ -620,6 +658,10 @@ module.exports = {
                     if (formattedName) {
                         editPayload.name = formattedName;
                     }
+
+                    if (iconBufferOrUrl) {
+                        editPayload.icon = iconBufferOrUrl;
+                    }
                     
                     await targetRole.edit(editPayload);
 
@@ -632,8 +674,8 @@ module.exports = {
                     const safePrimary = formatDiscordColor(primaryColorHex);
                     const safeSecondary = secondaryColorHex ? formatDiscordColor(secondaryColorHex) : null;
                     
-                    let successText = `<:yes:1551365722729484370> Successfully updated your custom role style to **${newStyle.toUpperCase()}**:\n`;
-                    successText += `-# _Role:_ ${targetRole}\n`;
+                    let successText = `<:yes:1551365722729484370> Successfully updated your ${targetRole} role to:\n`;
+                    successText += `-# _Role Style:_ ${newStyle.charAt(0).toUpperCase() + newStyle.slice(1)}\n`;
                     
                     if (newStyle === 'gradient' && safeSecondary) {
                         successText += `-# _Primary Colour:_ \`${safePrimary}\`\n`;
@@ -648,6 +690,7 @@ module.exports = {
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
+                    icon: iconBufferOrUrl || null,
                     permissions: [],
                     position: targetPosition, 
                     reason: `Custom role created by ${interaction.user.tag}`
