@@ -358,10 +358,10 @@ module.exports = {
             }
 
             const isGradient = userRoleData.style === 'gradient';
-            let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
+            let formattedColorText = `-# _Colour:_ \`${actualPrimaryColor}\``;
             
             if (isGradient && actualSecondaryColor) {
-                formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour_: \`${actualSecondaryColor}\``;
+                formattedColorText = `-# _Primary Colour:_ \`${actualPrimaryColor}\`\n-# _Secondary Colour:_ \`${actualSecondaryColor}\``;
             }
 
             const confirmationComponents = [
@@ -373,7 +373,7 @@ module.exports = {
                         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                     )
                     .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent(`-# _Role_: <@&${userRoleData.roleId}>\n${formattedColorText}`),
+                        new TextDisplayBuilder().setContent(`-# _Role:_ <@&${userRoleData.roleId}>\n${formattedColorText}`),
                     )
                     .addActionRowComponents(
                         new ActionRowBuilder()
@@ -417,9 +417,9 @@ module.exports = {
                 }
 
                 const isGradient = userRoleData.style === 'gradient';
-                let formattedColorText = `-# _Colour_: \`${actualPrimaryColor}\``;
+                let formattedColorText = `-# _Colour:_ \`${actualPrimaryColor}\``;
                 if (isGradient && actualSecondaryColor) {
-                    formattedColorText = `-# _Primary Colour_: \`${actualPrimaryColor}\`\n-# _Secondary Colour_: \`${actualSecondaryColor}\``;
+                    formattedColorText = `-# _Primary Colour:_ \`${actualPrimaryColor}\`\n-# _Secondary Colour:_ \`${actualSecondaryColor}\``;
                 }
 
                 const disabledComponents = [
@@ -431,7 +431,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
+                            new TextDisplayBuilder().setContent(`-# _Role:_<@&${userRoleData.roleId}>\n${formattedColorText}`),
                         )
                         .addActionRowComponents(
                             new ActionRowBuilder()
