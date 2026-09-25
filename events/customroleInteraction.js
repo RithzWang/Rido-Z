@@ -431,7 +431,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent(`-# _Role:_ <@&${userRoleData.roleId}>\n${formattedColorText}`),
+                            new TextDisplayBuilder().setContent(`Are you sure you want delete your <@&${userRoleData.roleId}>?\n${formattedColorText}`),
                         )
                         .addActionRowComponents(
                             new ActionRowBuilder()
@@ -505,7 +505,7 @@ module.exports = {
             const isBooster = interaction.member.premiumSince !== null;
             const prefix = isBooster ? '[booster]' : '[custom]';
             const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '').trim();
-            const formattedName = `${prefix} ${cleanName}`;
+            const formattedName = `${prefix}${cleanName}`;
 
             try {
                 await targetRole.edit({ name: formattedName });
@@ -593,7 +593,7 @@ module.exports = {
             let formattedName = null;
             if (rawName && rawName.trim().length > 0) {
                 const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '');
-                formattedName = `${prefix} ${cleanName}`;
+                formattedName = `${prefix}${cleanName}`;
             }
 
             const customColorsPayload = {
@@ -629,7 +629,20 @@ module.exports = {
                     userRoleData.lastUpdatedAt = new Date();
                     await userRoleData.save();
 
-                    return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role to **${newStyle.toUpperCase()}**: ${targetRole}`);
+                    const safePrimary = formatDiscordColor(primaryColorHex);
+                    const safeSecondary = secondaryColorHex ? formatDiscordColor(secondaryColorHex) : null;
+                    
+                    let successText = `<:yes:1551365722729484370> Successfully updated your custom role style to **${newStyle.toUpperCase()}**:\n`;
+                    successText += `-# _Role:_ ${targetRole}\n`;
+                    
+                    if (newStyle === 'gradient' && safeSecondary) {
+                        successText += `-# _Primary Colour:_ \`${safePrimary}\`\n`;
+                        successText += `-# _Secondary Colour:_ \`${safeSecondary}\``;
+                    } else {
+                        successText += `-# _Colour:_ \`${safePrimary}\``;
+                    }
+
+                    return interaction.editReply(successText);
                 }
 
                 targetRole = await interaction.guild.roles.create({
