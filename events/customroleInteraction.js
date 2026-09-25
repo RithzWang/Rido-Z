@@ -454,7 +454,7 @@ module.exports = {
             const isBooster = interaction.member.premiumSince !== null;
             const prefix = isBooster ? '[booster]' : '[custom]';
             const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '').trim();
-            const formattedName = `${prefix}${cleanName}`;
+            const formattedName = `${prefix} ${cleanName}`;
 
             try {
                 await targetRole.edit({ name: formattedName });
