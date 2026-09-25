@@ -141,18 +141,6 @@ async function sendRoleModal(interaction, style) {
         modal.addLabelComponents(secondaryColorLabel);
     }
 
-    // Custom Icon Upload
-    const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
-    if (hasRoleIcons) {
-        const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
-        const iconLabel = new LabelBuilder()
-            .setLabel('Custom Role Icon')
-            .setDescription('This Icon Will Be Displayed Next To Your Name')
-            .setFileUploadComponent(iconUpload);
-        
-        modal.addLabelComponents(iconLabel);
-    }
-
     return interaction.showModal(modal);
 }
 
@@ -195,6 +183,31 @@ module.exports = {
             const hasActiveRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
 
             if (hasActiveRole) {
+                const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
+                
+                const manageButtons = [
+                    new ButtonBuilder()
+                        .setStyle(ButtonStyle.Secondary)
+                        .setLabel("Edit Role Name")
+                        .setEmoji("1551910425254432809")
+                        .setCustomId("f3866b946b8c488dda4de32a1e728009"),
+                    new ButtonBuilder()
+                        .setStyle(ButtonStyle.Secondary)
+                        .setLabel("Change Role Style")
+                        .setEmoji("1551901185735131146")
+                        .setCustomId("7dcd1a8051764a7ef7e9d7b436ccec93"),
+                ];
+
+                if (hasRoleIcons) {
+                    manageButtons.push(
+                        new ButtonBuilder()
+                            .setStyle(ButtonStyle.Secondary)
+                            .setLabel("Edit Role Icon")
+                            .setEmoji("1551935969018511471")
+                            .setCustomId("f6f14fa8076d4086db9a47b73ae75085")
+                    );
+                }
+
                 const manageComponents = [
                     new ContainerBuilder()
                         .addTextDisplayComponents(
@@ -204,19 +217,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addActionRowComponents(
-                            new ActionRowBuilder()
-                                .addComponents(
-                                    new ButtonBuilder()
-                                        .setStyle(ButtonStyle.Secondary)
-                                        .setLabel("Edit Role Name")
-                                        .setEmoji("1551910425254432809")
-                                        .setCustomId("f3866b946b8c488dda4de32a1e728009"),
-                                    new ButtonBuilder()
-                                        .setStyle(ButtonStyle.Secondary)
-                                        .setLabel("Change Role Style")
-                                        .setEmoji("1551910052795908216")
-                                        .setCustomId("7dcd1a8051764a7ef7e9d7b436ccec93"),
-                                ),
+                            new ActionRowBuilder().addComponents(manageButtons),
                         ),
                 ];
 
@@ -280,6 +281,40 @@ module.exports = {
                 components: buildStyleSelectorComponents(), 
                 flags: [MessageFlags.IsComponentsV2]
             });
+        }
+
+        // 1d. --- EDIT ROLE ICON BUTTON HANDLER ---
+        if (interaction.isButton() && interaction.customId === 'f6f14fa8076d4086db9a47b73ae75085') {
+            const hasRoleIcons = interaction.guild.premiumTier >= 2 || interaction.guild.features?.includes('ROLE_ICONS');
+            if (!hasRoleIcons) {
+                return interaction.reply({
+                    content: "<:no:1551365724314935296> Server Boost Level 2 is required to set role icons.",
+                    ephemeral: true
+                });
+            }
+
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            const hasActiveRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
+
+            if (!hasActiveRole) {
+                return interaction.reply({
+                    content: "<:no:1551365724314935296> You do not have an active custom role to edit.",
+                    ephemeral: true
+                });
+            }
+
+            const modal = new ModalBuilder()
+                .setCustomId('modal_role_icon_edit')
+                .setTitle('Edit Role Icon');
+
+            const iconUpload = new FileUploadBuilder().setCustomId('role_icon_file');
+            const iconLabel = new LabelBuilder()
+                .setLabel('Custom Role Icon')
+                .setDescription('Upload an image for your custom role icon')
+                .setFileUploadComponent(iconUpload);
+
+            modal.addLabelComponents(iconLabel);
+            return interaction.showModal(modal);
         }
 
         // 2. --- SELECT MENU HANDLER ---
@@ -485,7 +520,44 @@ module.exports = {
             }
         }
 
-        // 5. --- STYLE MODAL SUBMISSION HANDLER ---
+        // 5. --- EDIT ICON MODAL SUBMISSION HANDLER ---
+        if (interaction.isModalSubmit() && interaction.customId === 'modal_role_icon_edit') {
+            await interaction.deferReply({ ephemeral: true });
+
+            let iconBufferOrUrl = null;
+            try {
+                const fileAttachment = interaction.fields.getAttachment('role_icon_file');
+                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
+            } catch (err) { }
+
+            if (!iconBufferOrUrl) {
+                return interaction.editReply("<:no:1551365724314935296> No valid image file was uploaded.");
+            }
+
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
+                return interaction.editReply("<:no:1551365724314935296> You do not have an active custom role to edit.");
+            }
+
+            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            if (!targetRole) {
+                return interaction.editReply("<:no:1551365724314935296> Could not find your role on this server.");
+            }
+
+            try {
+                await targetRole.edit({ icon: iconBufferOrUrl });
+
+                userRoleData.lastUpdatedAt = new Date();
+                await userRoleData.save();
+
+                return interaction.editReply(`<:yes:1551365722729484370> Successfully updated your custom role icon for ${targetRole}!`);
+            } catch (error) {
+                console.error("Role Icon Edit Error:", error);
+                return interaction.editReply("<:no:1551365724314935296> Failed to update role icon. Ensure the image is valid and the server has Level 2 Boost.");
+            }
+        }
+
+        // 6. --- STYLE MODAL SUBMISSION HANDLER ---
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
             await interaction.deferReply({ ephemeral: true });
 
@@ -498,7 +570,6 @@ module.exports = {
                 }
             }
 
-            // Safely get role_name if it exists in the modal (for first-time creators)
             let rawName = null;
             try {
                 rawName = interaction.fields.getTextInputValue('role_name');
@@ -510,12 +581,6 @@ module.exports = {
             if (newStyle === 'gradient') {
                 secondaryColorHex = interaction.fields.getTextInputValue('secondary_color');
             }
-            
-            let iconBufferOrUrl = null;
-            try {
-                const fileAttachment = interaction.fields.getAttachment('role_icon_file');
-                if (fileAttachment) iconBufferOrUrl = fileAttachment.url;
-            } catch (err) { }
 
             const anchorRole = interaction.guild.roles.cache.get(ANCHOR_ROLE_ID);
             const boundaryRole = interaction.guild.roles.cache.get(BOUNDARY_ROLE_ID);
@@ -548,12 +613,10 @@ module.exports = {
                 if (targetRole) {
                     const editPayload = {
                         colors: customColorsPayload,
-                        icon: iconBufferOrUrl || null,
                         permissions: [],
                         position: targetPosition 
                     };
 
-                    // Only update name if it was explicitly submitted
                     if (formattedName) {
                         editPayload.name = formattedName;
                     }
@@ -572,7 +635,6 @@ module.exports = {
                 targetRole = await interaction.guild.roles.create({
                     name: formattedName || `${prefix} Custom Role`,
                     colors: customColorsPayload,
-                    icon: iconBufferOrUrl || null,
                     permissions: [],
                     position: targetPosition, 
                     reason: `Custom role created by ${interaction.user.tag}`
