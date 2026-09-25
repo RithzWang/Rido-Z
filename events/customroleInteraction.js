@@ -431,7 +431,7 @@ module.exports = {
                             new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
                         )
                         .addTextDisplayComponents(
-                            new TextDisplayBuilder().setContent(`-# _Role:_<@&${userRoleData.roleId}>\n${formattedColorText}`),
+                            new TextDisplayBuilder().setContent(`-# _Role:_ <@&${userRoleData.roleId}>\n${formattedColorText}`),
                         )
                         .addActionRowComponents(
                             new ActionRowBuilder()
