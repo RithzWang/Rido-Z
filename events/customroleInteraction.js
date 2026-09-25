@@ -26,7 +26,6 @@ const BOUNDARY_ROLE_ID = '1552136781984436264';
 const EXEMPT_ROLES = ['878566116203589632', '1469705529306910753'];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-// Helper to format string hex codes
 function formatDiscordColor(hexString) {
     if (!hexString) return '';
     let clean = hexString.replace(/^#+/g, '').trim(); 
@@ -43,6 +42,39 @@ async function checkEnhancedRolePerk(guild) {
     } catch {
         return guild.features?.includes('ENHANCED_ROLE_COLORS');
     }
+}
+
+function buildStyleSelectorComponents() {
+    return [
+        new ContainerBuilder()
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Custom Role Style"),
+            )
+            .addSeparatorComponents(
+                new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+            )
+            .addTextDisplayComponents(
+                new TextDisplayBuilder().setContent("- **Solid**\n_You can pick one colour_\n- **Gradient **\n_You can pick two colours_"),
+            )
+            .addActionRowComponents(
+                new ActionRowBuilder()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId("7961861e646f4b8f9acccc9767c973ff")
+                            .setPlaceholder("Solid & Gradient")
+                            .addOptions(
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel("Solid")
+                                    .setValue("3edc1c1c1bee48f6eac26b9555e5a408")
+                                    .setEmoji({ name: "1️⃣" }),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel("Gradient")
+                                    .setValue("5ab448a89aa04452b6f1276f6853296c")
+                                    .setEmoji({ name: "2️⃣" })
+                            ),
+                    ),
+            ),
+    ];
 }
 
 async function sendRoleModal(interaction, style) {
@@ -157,46 +189,95 @@ module.exports = {
                 }
             }
 
+            const hasActiveRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
+
+            // If user already has an active custom role, show the Manage Role hub
+            if (hasActiveRole) {
+                const manageComponents = [
+                    new ContainerBuilder()
+                        .addTextDisplayComponents(
+                            new TextDisplayBuilder().setContent("# <:pen:1551910425254432809> Manage Custom Role"),
+                        )
+                        .addSeparatorComponents(
+                            new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
+                        )
+                        .addActionRowComponents(
+                            new ActionRowBuilder()
+                                .addComponents(
+                                    new ButtonBuilder()
+                                        .setStyle(ButtonStyle.Secondary)
+                                        .setLabel("Edit Role Name")
+                                        .setEmoji("1551910425254432809")
+                                        .setCustomId("f3866b946b8c488dda4de32a1e728009"),
+                                    new ButtonBuilder()
+                                        .setStyle(ButtonStyle.Secondary)
+                                        .setLabel("Change Role Style")
+                                        .setEmoji("1551910052795908216")
+                                        .setCustomId("7dcd1a8051764a7ef7e9d7b436ccec93"),
+                                ),
+                        ),
+                ];
+
+                return interaction.reply({ 
+                    components: manageComponents, 
+                    flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral] 
+                });
+            }
+
+            // For new users or users with deleted roles
+            const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
+            if (!hasEnhancedRoleStyle) {
+                return sendRoleModal(interaction, 'solid');
+            }
+
+            return interaction.reply({ 
+                components: buildStyleSelectorComponents(), 
+                flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral]
+            });
+        }
+
+        // 1b. --- EDIT ROLE NAME BUTTON HANDLER ---
+        if (interaction.isButton() && interaction.customId === 'f3866b946b8c488dda4de32a1e728009') {
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+            const hasActiveRole = !!(userRoleData && userRoleData.roleId && !userRoleData.roleId.startsWith('deleted_'));
+
+            if (!hasActiveRole) {
+                return interaction.reply({
+                    content: "<:no:1551365724314935296> You do not have an active custom role to edit.",
+                    ephemeral: true
+                });
+            }
+
+            const modal = new ModalBuilder()
+                .setCustomId('modal_role_name_edit')
+                .setTitle('Edit Role Name');
+
+            const nameInput = new TextInputBuilder()
+                .setCustomId('new_role_name')
+                .setPlaceholder('Tap to type...')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            const nameLabel = new LabelBuilder()
+                .setLabel('New Custom Role Name')
+                .setDescription('Enter your new custom role name')
+                .setTextInputComponent(nameInput);
+
+            modal.addLabelComponents(nameLabel);
+            return interaction.showModal(modal);
+        }
+
+        // 1c. --- CHANGE ROLE STYLE BUTTON HANDLER ---
+        if (interaction.isButton() && interaction.customId === '7dcd1a8051764a7ef7e9d7b436ccec93') {
             const hasEnhancedRoleStyle = await checkEnhancedRolePerk(interaction.guild);
 
             if (!hasEnhancedRoleStyle) {
                 return sendRoleModal(interaction, 'solid');
             }
 
-            const styleSelectorComponents = [
-                new ContainerBuilder()
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("## <:brush:1551910052795908216> Select Custom Role Style"),
-                    )
-                    .addSeparatorComponents(
-                        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(true),
-                    )
-                    .addTextDisplayComponents(
-                        new TextDisplayBuilder().setContent("- **Solid**\n_You can pick one colour_\n- **Gradient **\n_You can pick two colours_"),
-                    )
-                    .addActionRowComponents(
-                        new ActionRowBuilder()
-                            .addComponents(
-                                new StringSelectMenuBuilder()
-                                    .setCustomId("7961861e646f4b8f9acccc9767c973ff")
-                                    .setPlaceholder("Solid & Gradient")
-                                    .addOptions(
-                                        new StringSelectMenuOptionBuilder()
-                                            .setLabel("Solid")
-                                            .setValue("3edc1c1c1bee48f6eac26b9555e5a408")
-                                            .setEmoji({ name: "1️⃣" }),
-                                        new StringSelectMenuOptionBuilder()
-                                            .setLabel("Gradient")
-                                            .setValue("5ab448a89aa04452b6f1276f6853296c")
-                                            .setEmoji({ name: "2️⃣" })
-                                    ),
-                            ),
-                    ),
-            ];
-
-            return interaction.reply({ 
-                components: styleSelectorComponents, 
-                flags: [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral]
+            return interaction.update({ 
+                components: buildStyleSelectorComponents(), 
+                flags: [MessageFlags.IsComponentsV2]
             });
         }
 
@@ -229,12 +310,10 @@ module.exports = {
                 return interaction.editReply("<:no:1551365724314935296> You do not have a custom role yet");
             }
 
-            // Fetch actual colors from Discord
             const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
             let actualPrimaryColor = targetRole ? targetRole.hexColor.toUpperCase() : formatDiscordColor(userRoleData.primaryColor);
             let actualSecondaryColor = userRoleData.secondaryColor ? formatDiscordColor(userRoleData.secondaryColor) : null;
 
-            // Extract the secondary color directly from the Discord role if available
             if (targetRole && targetRole.colors) {
                 const secColorInt = targetRole.colors.secondaryColor ?? targetRole.colors.secondary_color;
                 if (secColorInt !== undefined && secColorInt !== null) {
@@ -280,7 +359,6 @@ module.exports = {
 
         // 3b. --- CONFIRM DELETE ---
         if (interaction.isButton() && interaction.customId === 'c724df3843ac4653b315b3ceec12d4a0') {
-            
             try {
                 const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
 
@@ -291,7 +369,6 @@ module.exports = {
                     });
                 }
 
-                // Fetch actual colors from Discord
                 const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
                 let actualPrimaryColor = targetRole ? targetRole.hexColor.toUpperCase() : formatDiscordColor(userRoleData.primaryColor);
                 let actualSecondaryColor = userRoleData.secondaryColor ? formatDiscordColor(userRoleData.secondaryColor) : null;
@@ -373,7 +450,41 @@ module.exports = {
             }
         }
 
-        // 4. --- MODAL SUBMISSION HANDLER ---
+        // 4. --- EDIT NAME MODAL SUBMISSION HANDLER ---
+        if (interaction.isModalSubmit() && interaction.customId === 'modal_role_name_edit') {
+            await interaction.deferReply({ ephemeral: true });
+
+            const rawName = interaction.fields.getTextInputValue('new_role_name');
+            const userRoleData = await UserRoleDB.findOne({ guildId: interaction.guildId, userId: interaction.user.id });
+
+            if (!userRoleData || !userRoleData.roleId || userRoleData.roleId.startsWith('deleted_')) {
+                return interaction.editReply("<:no:1551365724314935296> You do not have an active custom role to edit.");
+            }
+
+            const targetRole = interaction.guild.roles.cache.get(userRoleData.roleId);
+            if (!targetRole) {
+                return interaction.editReply("<:no:1551365724314935296> Could not find your role on this server.");
+            }
+
+            const isBooster = interaction.member.premiumSince !== null;
+            const prefix = isBooster ? '[booster]' : '[custom]';
+            const cleanName = rawName.replace(/^(\[booster\]|\[custom\]|\(custom\))\s*/i, '').trim();
+            const formattedName = `${prefix} ${cleanName}`;
+
+            try {
+                await targetRole.edit({ name: formattedName });
+
+                userRoleData.lastUpdatedAt = new Date();
+                await userRoleData.save();
+
+                return interaction.editReply(`<:yes:1551365722729484370> Successfully changed your custom role name to: **${formattedName}** (${targetRole})`);
+            } catch (error) {
+                console.error("Role Name Edit Error:", error);
+                return interaction.editReply("<:no:1551365724314935296> Failed to update role name. Please ensure the bot has proper permissions.");
+            }
+        }
+
+        // 5. --- STYLE MODAL SUBMISSION HANDLER ---
         if (interaction.isModalSubmit() && interaction.customId.startsWith('modal_role_')) {
             await interaction.deferReply({ ephemeral: true });
 
