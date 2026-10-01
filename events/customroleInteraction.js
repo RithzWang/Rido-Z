@@ -24,6 +24,7 @@ const BOUNDARY_ROLE_ID = '1552136781984436264';
 // Cooldown Configuration
 const EXEMPT_ROLES = ['878566116203589632', '1469705529306910753'];
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const SIX_HOURS_MS = ONE_DAY_MS / 4;
 
 function formatDiscordColor(hexString) {
     if (!hexString) return '';
@@ -166,10 +167,10 @@ module.exports = {
                 const lastUpdated = userRoleData.lastUpdatedAt ? new Date(userRoleData.lastUpdatedAt).getTime() : 0;
                 const now = Date.now();
                 
-                if (now - lastUpdated < ONE_DAY_MS) {
-                    const nextAvailable = Math.floor((lastUpdated + ONE_DAY_MS) / 1000);
+                if (now - lastUpdated < SIX_HOURS_MS) {
+                    const nextAvailable = Math.floor((lastUpdated + SIX_HOURS_MS) / 1000);
                     return interaction.reply({
-                        content: `<:no:1551365724314935296> You can only update or recreate your custom role once a day! You can do this again <t:${nextAvailable}:R>.`,
+                        content: `<:no:1551365724314935296> You can not manage your custom role currently! You can do this again <t:${nextAvailable}:R>.`,
                         ephemeral: true
                     });
                 }
