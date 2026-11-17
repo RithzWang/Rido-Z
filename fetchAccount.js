@@ -4,6 +4,33 @@ const cors = require('cors');
 const TARGET_USER_ID = '792341624797265930';
 const MUTUAL_GUILD_ID = '878565984108150824'; // Replace with a server ID you and the bot share
 
+
+function formatSpotifyActivity(activities = []) {
+    // Activity type 2 corresponds to ActivityType.Listening
+    const spotify = activities.find(act => act.name === 'Spotify' && act.type === 2);
+    if (!spotify) return null;
+
+    // Discord prefixes Spotify image IDs with "spotify:"
+    const rawImage = spotify.assets?.largeImage || '';
+    const albumArtUrl = rawImage.startsWith('spotify:')
+        ? `https://i.scdn.co/image/${rawImage.slice('spotify:'.length)}`
+        : null;
+
+    return {
+        track_id: spotify.syncId || null,
+        track_url: spotify.syncId ? `https://open.spotify.com/track/${spotify.syncId}` : null,
+        song: spotify.details || 'Unknown Track',
+        // Discord separates multiple artists with "; "
+        artist: spotify.state ? spotify.state.replace(/; /g, ', ') : 'Unknown Artist',
+        album: spotify.assets?.largeText || '',
+        album_art_url: albumArtUrl,
+        timestamps: {
+            start: spotify.timestamps?.start ? spotify.timestamps.start.getTime() : null,
+            end: spotify.timestamps?.end ? spotify.timestamps.end.getTime() : null
+        }
+    };
+}
+
 function registerStatusRoute(client, app) {
     app.use(cors());
 
@@ -22,17 +49,18 @@ function registerStatusRoute(client, app) {
                 return res.status(500).json({ success: false, error: 'Mutual guild not found' });
             }
 
-            // Fetch member if not already cached
             const member = guild.members.cache.get(TARGET_USER_ID)
                 || await guild.members.fetch(TARGET_USER_ID).catch(() => null);
 
-            // When a user is offline, member.presence is null in discord.js
             const discordStatus = member?.presence?.status || 'offline';
+            const spotifyData = formatSpotifyActivity(member?.presence?.activities);
 
             return res.json({
                 success: true,
                 data: {
-                    discord_status: discordStatus
+                    discord_status: discordStatus,
+                    listening_to_spotify: Boolean(spotifyData),
+                    spotify: spotifyData
                 }
             });
         } catch (err) {
@@ -43,13 +71,11 @@ function registerStatusRoute(client, app) {
 }
 
 function initFetchAccount(client, existingApp = null) {
-    // If you already have an Express app running, attach the route to it
     if (existingApp) {
         registerStatusRoute(client, existingApp);
         return existingApp;
     }
 
-    // Otherwise, start a standalone Express server on PORT
     const app = express();
     const PORT = process.env.PORT || 3000;
     registerStatusRoute(client, app);
